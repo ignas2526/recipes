@@ -1,5 +1,5 @@
 <template>
-    <div row style="margin: 4px">
+    <div row class="my-3">
         <!-- @[useDrag&&`dragover`] <== this syntax completely shuts off draggable  -->
         <b-card
             no-body
@@ -17,7 +17,7 @@
         >
             <b-row no-gutters>
                 <b-col no-gutters class="col-sm-3">
-                    <b-card-img-lazy style="object-fit: cover; height: 6em" :src="item_image" v-bind:alt="$t('Recipe_Image')"></b-card-img-lazy>
+                    <b-card-img-lazy style="height: 15vh; object-fit: cover; min-height:120px" :src="item_image" v-bind:alt="$t('Recipe_Image')"></b-card-img-lazy>
                 </b-col>
                 <b-col no-gutters class="col-sm-9">
                     <b-card-body class="m-0 py-0">
