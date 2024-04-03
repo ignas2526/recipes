@@ -5,7 +5,7 @@
 
         <div class="row">
             <div class="col-12 col-xl-10 col-lg-10 offset-xl-1 offset-lg-1">
-                <div class="container-fluid d-flex flex-column flex-grow-1">
+                <div class="container-fluid d-flex flex-column flex-grow-1 m-0 p-0">
                     <!-- dynamically loaded header components -->
                     <div class="row" v-if="header_component_name">
                         <div class="col-md-12">
