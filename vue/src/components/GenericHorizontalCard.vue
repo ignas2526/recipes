@@ -73,7 +73,7 @@
         </b-card>
         <!-- recursively add child cards -->
         <div class="row" v-if="item.show_children">
-            <div class="col-md-10 offset-md-2">
+            <div class="col-md-12 mt-1">
                 <generic-horizontal-card v-for="child in item[children]"
                                          v-bind:key="child.id" 
                                          :item="child" :model="model"
@@ -82,7 +82,7 @@
         </div>
         <!-- conditionally view recipes -->
         <div class="row" v-if="item.show_recipes">
-            <div class="col-md-10 offset-md-2">
+            <div class="col-md-12 mt-1">
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); grid-gap: 1rem">
                     <recipe-card v-for="r in item[recipes]" v-bind:key="r.id" :recipe="r"> </recipe-card>
                 </div>
