@@ -4,8 +4,7 @@
                             :item2="this_target" :show="show_modal" @finish-action="finishAction"/>
 
         <div class="row">
-            <div class="col-md-2 d-none d-md-block"></div>
-            <div class="col-xl-8 col-12">
+            <div class="col-12 col-xl-10 col-lg-10 offset-xl-1 offset-lg-1">
                 <div class="container-fluid d-flex flex-column flex-grow-1">
                     <!-- dynamically loaded header components -->
                     <div class="row" v-if="header_component_name">
