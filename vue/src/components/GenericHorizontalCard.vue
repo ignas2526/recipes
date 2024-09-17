@@ -1,5 +1,5 @@
 <template>
-    <div row style="margin: 4px">
+    <div row class="my-3">
         <!-- @[useDrag&&`dragover`] <== this syntax completely shuts off draggable  -->
         <b-card
             no-body
@@ -17,7 +17,7 @@
         >
             <b-row no-gutters>
                 <b-col no-gutters class="col-sm-3">
-                    <b-card-img-lazy style="object-fit: cover; height: 6em" :src="item_image" v-bind:alt="$t('Recipe_Image')"></b-card-img-lazy>
+                    <b-card-img-lazy style="height: 15vh; object-fit: cover; min-height:120px" :src="item_image" v-bind:alt="$t('Recipe_Image')"></b-card-img-lazy>
                 </b-col>
                 <b-col no-gutters class="col-sm-9">
                     <b-card-body class="m-0 py-0">
@@ -73,7 +73,7 @@
         </b-card>
         <!-- recursively add child cards -->
         <div class="row" v-if="item.show_children">
-            <div class="col-md-10 offset-md-2">
+            <div class="col-md-12 mt-1">
                 <generic-horizontal-card v-for="child in item[children]"
                                          v-bind:key="child.id" 
                                          :item="child" :model="model"
@@ -82,7 +82,7 @@
         </div>
         <!-- conditionally view recipes -->
         <div class="row" v-if="item.show_recipes">
-            <div class="col-md-10 offset-md-2">
+            <div class="col-md-12 mt-1">
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); grid-gap: 1rem">
                     <recipe-card v-for="r in item[recipes]" v-bind:key="r.id" :recipe="r"> </recipe-card>
                 </div>
