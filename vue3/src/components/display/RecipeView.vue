@@ -11,13 +11,14 @@
     <template v-if="recipe.name != undefined">
         <v-card class="mt-md-4 rounded-0">
             <recipe-image
-                max-height="25vh"
+                max-height="75vh"
+                min-height="250px"
                 :recipe="recipe"
                 v-if="recipe.internal"
             >
                 <template #overlay>
-                    <v-chip class="ms-2" color="primary" variant="flat" size="x-small">by {{ recipe.createdBy.displayName }}</v-chip>
-                    <keywords-component variant="flat" class="ms-1 mb-2" :keywords="recipe.keywords"></keywords-component>
+                    <v-chip class="ms-2" color="primary" variant="flat" size="small">by {{ recipe.createdBy.displayName }}</v-chip>
+                    <keywords-component variant="flat" class="ms-2 mb-2" :keywords="recipe.keywords"></keywords-component>
                 </template>
             </recipe-image>
 
