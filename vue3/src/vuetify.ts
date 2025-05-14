@@ -18,7 +18,7 @@ export default createVuetify({
         },
     },
     styles: {
-        configFile: 'src/variables.scss'
+        configFile: './variables.scss'
     },
     defaults: {
         // disabled as this leads to cards overflowing if not careful, manually set on cards containing a multiselect until proper solution is found
