@@ -1,6 +1,7 @@
 import '@fortawesome/fontawesome-free/css/all.css'
 import 'vuetify/styles'
 import {aliases, fa} from 'vuetify/iconsets/fa'
+import '@/styles/settings.scss' // Import your settings
 
 // Composables
 import {createVuetify} from 'vuetify'
@@ -16,9 +17,6 @@ export default createVuetify({
             lg: 1220,
             xl: 1920,
         },
-    },
-    styles: {
-        configFile: './variables.scss'
     },
     defaults: {
         // disabled as this leads to cards overflowing if not careful, manually set on cards containing a multiselect until proper solution is found
