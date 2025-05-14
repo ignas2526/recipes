@@ -1,7 +1,9 @@
-$grid-breakpoints: (
-  'xs': 0,
-  'sm': 600px,
-  'md': 900px,
-  'lg': 1220px,
-  'xl': 1920px
+@use 'vuetify/settings' with (
+  $grid-breakpoints: (
+    'xs': 0,
+    'sm': 600px,
+    'md': 900px,
+    'lg': 1220px,
+    'xl': 1920px
+  )
 );
