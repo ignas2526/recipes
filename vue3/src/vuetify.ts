@@ -1,7 +1,6 @@
 import '@fortawesome/fontawesome-free/css/all.css'
 import 'vuetify/styles'
 import {aliases, fa} from 'vuetify/iconsets/fa'
-import '@/styles/settings.scss' // Import your settings
 
 // Composables
 import {createVuetify} from 'vuetify'
