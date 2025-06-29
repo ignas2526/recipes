@@ -136,6 +136,14 @@
 
                 <navigation-drawer-context-menu></navigation-drawer-context-menu>
             </v-list>
+
+
+            <template #append>
+                <v-list nav>
+                    <v-list-item prepend-icon="fas fa-sliders" :title="$t('Settings')" :to="{ name: 'SettingsPage', params: {} }"></v-list-item>
+                </v-list>
+            </template>
+
         </v-navigation-drawer>
 
         <v-bottom-navigation grow v-if="useUserPreferenceStore().isAuthenticated && !lgAndUp">
