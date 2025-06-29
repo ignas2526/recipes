@@ -268,19 +268,24 @@ class UserFileSerializer(serializers.ModelSerializer):
                     > self.context['request'].space.max_file_storage_mb != 0):
                 raise ValidationError(_('You have reached your file upload limit.'))
 
-    def create(self, validated_data):
-        if not is_file_type_allowed(validated_data['file'].name):
-            return None
+    def check_file_type(self, validated_data):
+        print('checking file type')
+        if 'file' in validated_data:
+            print('filke present in data')
+            if not is_file_type_allowed(validated_data['file'].name, image_only=False):
+                print('is not allowed')
+                raise ValidationError(_('The given file type is not allowed.'))
 
+    def create(self, validated_data):
         self.check_file_limit(validated_data)
+        self.check_file_type(validated_data)
         validated_data['created_by'] = self.context['request'].user
         validated_data['space'] = self.context['request'].space
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
-        if not is_file_type_allowed(validated_data['file'].name):
-            return None
         self.check_file_limit(validated_data)
+        self.check_file_type(validated_data)
         return super().update(instance, validated_data)
 
     class Meta:
@@ -447,28 +452,7 @@ class UserPreferenceSerializer(WritableNestedModelSerializer):
         read_only_fields = ('user',)
 
 
-class StorageSerializer(SpacedModelSerializer):
-
-    def create(self, validated_data):
-        validated_data['created_by'] = self.context['request'].user
-        return super().create(validated_data)
-
-    class Meta:
-        model = Storage
-        fields = (
-            'id', 'name', 'method', 'username', 'password',
-            'token', 'created_by'
-        )
-
-        read_only_fields = ('created_by',)
-
-        extra_kwargs = {
-            'password': {'write_only': True},
-            'token': {'write_only': True},
-        }
-
-
-class ConnectorConfigConfigSerializer(SpacedModelSerializer):
+class ConnectorConfigSerializer(SpacedModelSerializer):
 
     def create(self, validated_data):
         validated_data['created_by'] = self.context['request'].user
@@ -477,7 +461,7 @@ class ConnectorConfigConfigSerializer(SpacedModelSerializer):
     class Meta:
         model = ConnectorConfig
         fields = (
-            'id', 'name', 'url', 'token', 'todo_entity', 'enabled',
+            'id', 'name', 'type', 'url', 'token', 'todo_entity', 'enabled',
             'on_shopping_list_entry_created_enabled', 'on_shopping_list_entry_updated_enabled',
             'on_shopping_list_entry_deleted_enabled', 'supports_description_field', 'created_by'
         )
@@ -489,7 +473,38 @@ class ConnectorConfigConfigSerializer(SpacedModelSerializer):
         }
 
 
-class SyncSerializer(SpacedModelSerializer):
+class StorageSerializer(WritableNestedModelSerializer, SpacedModelSerializer):
+
+    def create(self, validated_data):
+        validated_data['created_by'] = self.context['request'].user
+        return super().create(validated_data)
+
+    class Meta:
+        model = Storage
+        fields = (
+            'id', 'name', 'method', 'username', 'password',
+            'token', 'url', 'path', 'created_by'
+        )
+
+        read_only_fields = ('id', 'created_by',)
+
+        extra_kwargs = {
+            'password': {'write_only': True},
+            'token': {'write_only': True},
+        }
+
+
+class RecipeImportSerializer(WritableNestedModelSerializer, SpacedModelSerializer):
+    storage = StorageSerializer()
+
+    class Meta:
+        model = RecipeImport
+        fields = ('id', 'storage', 'name', 'file_uid', 'file_path', 'created_at')
+
+
+class SyncSerializer(WritableNestedModelSerializer, SpacedModelSerializer):
+    storage = StorageSerializer()
+
     class Meta:
         model = Sync
         fields = (
@@ -499,6 +514,8 @@ class SyncSerializer(SpacedModelSerializer):
 
 
 class SyncLogSerializer(SpacedModelSerializer):
+    sync = SyncSerializer(read_only=True)
+
     class Meta:
         model = SyncLog
         fields = ('id', 'sync', 'status', 'msg', 'created_at')
@@ -1499,6 +1516,20 @@ class ServerSettingsSerializer(serializers.Serializer):
     debug = serializers.BooleanField()
     version = serializers.CharField()
 
+    unauthenticated_theme_from_space = serializers.IntegerField()
+    force_theme_from_space = serializers.IntegerField()
+
+    logo_color_32 = serializers.ImageField(default=None)
+    logo_color_128 = serializers.CharField(default=None)
+    logo_color_144 = serializers.CharField(default=None)
+    logo_color_180 = serializers.CharField(default=None)
+    logo_color_192 = serializers.CharField(default=None)
+    logo_color_512 = serializers.CharField(default=None)
+    logo_color_svg = serializers.CharField(default=None)
+    custom_space_theme = serializers.CharField(default=None)
+    nav_logo = serializers.CharField(default=None)
+    nav_bg_color = serializers.CharField(default=None)
+
     class Meta:
         fields = '__ALL__'
         read_only_fields = '__ALL__'
@@ -1704,6 +1735,13 @@ class AiImportSerializer(serializers.Serializer):
     text = serializers.CharField(allow_null=True, allow_blank=True)
 
 
+class ExportRequestSerializer(serializers.Serializer):
+    type = serializers.CharField()
+    all = serializers.BooleanField(default=False)
+    recipes = RecipeFlatSerializer(many=True, default=[])
+    custom_filter = CustomFilterSerializer(many=False, default=None, allow_null=True)
+
+
 class ImportOpenDataSerializer(serializers.Serializer):
     selected_version = serializers.CharField()
     selected_datatypes = serializers.ListField(child=serializers.CharField())
@@ -1717,6 +1755,7 @@ class ImportOpenDataResponseDetailSerializer(serializers.Serializer):
     total_untouched = serializers.IntegerField(default=0)
     total_errored = serializers.IntegerField(default=0)
 
+
 class ImportOpenDataResponseSerializer(serializers.Serializer):
     food = ImportOpenDataResponseDetailSerializer(required=False)
     unit = ImportOpenDataResponseDetailSerializer(required=False)
@@ -1725,6 +1764,7 @@ class ImportOpenDataResponseSerializer(serializers.Serializer):
     store = ImportOpenDataResponseDetailSerializer(required=False)
     conversion = ImportOpenDataResponseDetailSerializer(required=False)
 
+
 class ImportOpenDataVersionMetaDataSerializer(serializers.Serializer):
     food = serializers.IntegerField()
     unit = serializers.IntegerField()
@@ -1732,6 +1772,7 @@ class ImportOpenDataVersionMetaDataSerializer(serializers.Serializer):
     property = serializers.IntegerField()
     store = serializers.IntegerField()
     conversion = serializers.IntegerField()
+
 
 class ImportOpenDataMetaDataSerializer(serializers.Serializer):
     versions = serializers.ListField(child=serializers.CharField())

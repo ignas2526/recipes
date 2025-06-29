@@ -63,7 +63,8 @@
                             </v-col>
                         </v-row>
 
-                        <closable-help-alert :text="$t('RecipeStepsHelp')" :action-text="$t('Steps')" @click="tab='steps'"></closable-help-alert>
+<!--                        <closable-help-alert :text="$t('RecipeStepsHelp')" :action-text="$t('Steps')" @click="tab='steps'"></closable-help-alert>-->
+                        <v-btn @click="tab='steps'" class="float-right" variant="tonal" append-icon="fa-solid fa-arrow-right">{{$t('Steps')}} </v-btn>
                     </v-form>
 
                 </v-tabs-window-item>
@@ -95,7 +96,7 @@
                 </v-tabs-window-item>
                 <v-tabs-window-item value="settings">
                     <v-form :disabled="loading || fileApiLoading">
-                        <v-checkbox :label="$t('Ingredient Overview')" :hint="$t('show_ingredient_overview')" persistent-hint
+                        <v-checkbox :label="$t('show_ingredient_overview')"
                                     v-model="editingObj.showIngredientOverview"></v-checkbox>
 
                         <v-text-field :label="$t('Imported_From')" v-model="editingObj.sourceUrl"></v-text-field>
@@ -160,7 +161,7 @@ const props = defineProps({
     dialog: {type: Boolean, default: false}
 })
 
-const emit = defineEmits(['create', 'save', 'delete', 'close'])
+const emit = defineEmits(['create', 'save', 'delete', 'close', 'changedState'])
 const {setupState, deleteObject, saveObject, isUpdate, editingObjName, loading, editingObj, editingObjChanged, modelClass} = useModelEditorFunctions<Recipe>('Recipe', emit)
 
 // object specific data (for selects/display)
@@ -212,6 +213,7 @@ function addStep() {
     editingObj.value.steps.push({
         ingredients: [] as Ingredient[],
         time: 0,
+        showIngredientsTable: useUserPreferenceStore().userSettings.showStepIngredients
     } as Step)
 }
 

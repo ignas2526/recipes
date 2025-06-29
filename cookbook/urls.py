@@ -50,12 +50,13 @@ router.register(r'shopping-list-recipe', api.ShoppingListRecipeViewSet)
 router.register(r'space', api.SpaceViewSet)
 router.register(r'step', api.StepViewSet)
 router.register(r'storage', api.StorageViewSet)
-router.register(r'connector-config', api.ConnectorConfigConfigViewSet)
+router.register(r'connector-config', api.ConnectorConfigViewSet)
 router.register(r'supermarket', api.SupermarketViewSet)
 router.register(r'supermarket-category', api.SupermarketCategoryViewSet)
 router.register(r'supermarket-category-relation', api.SupermarketCategoryRelationViewSet)
 router.register(r'sync', api.SyncViewSet)
 router.register(r'sync-log', api.SyncLogViewSet)
+router.register(r'recipe-import', api.RecipeImportViewSet)
 router.register(r'unit', api.UnitViewSet)
 router.register(r'user-file', api.UserFileViewSet)
 router.register(r'user', api.UserViewSet)
@@ -111,9 +112,10 @@ urlpatterns = [
     path('data/batch/import', data.batch_import, name='data_batch_import'),
     path('data/sync/wait', data.sync_wait, name='data_sync_wait'),
     path('api/import/', api.AppImportView.as_view(), name='view_import'),
+    path('api/export/', api.AppExportView.as_view(), name='api_export'),
     path('data/import/url', data.import_url, name='data_import_url'),
-    path('api/get_external_file_link/<int:recipe_id>/', api.get_external_file_link, name='api_get_external_file_link'),
-    path('api/get_recipe_file/<int:recipe_id>/', api.get_recipe_file, name='api_get_recipe_file'),
+    path('api/get_external_file_link/<int:pk>/', api.get_external_file_link, name='api_get_external_file_link'),
+    path('api/get_recipe_file/<int:pk>/', api.get_recipe_file, name='api_get_recipe_file'),
     path('api/sync_all/', api.sync_all, name='api_sync'),
     path('api/recipe-from-source/', api.RecipeUrlImportView.as_view(), name='api_recipe_from_source'),
     path('api/ai-import/', api.AiImportView.as_view(), name='api_ai_import'),

@@ -4,7 +4,7 @@
             <v-icon icon="$properties"></v-icon>
             {{ $t('Properties') }}
 
-            <v-btn-toggle border divided density="compact" class="float-right" v-if="hasRecipeProperties && hasRecipeProperties" v-model="sourceSelectedToShow">
+            <v-btn-toggle border divided density="compact" class="float-right d-print-none" v-if="hasRecipeProperties && hasRecipeProperties" v-model="sourceSelectedToShow">
                 <v-btn size="small" value="food">{{ $t('Food') }}</v-btn>
                 <v-btn size="small" value="recipe">{{ $t('Recipe') }}</v-btn>
             </v-btn-toggle>
@@ -25,9 +25,9 @@
                     <td>{{ $n(p.propertyAmountPerServing) }} {{ p.unit }}</td>
                     <td>{{ $n(p.propertyAmountTotal) }} {{ p.unit }}</td>
                     <td v-if="sourceSelectedToShow == 'food'">
-                        <v-btn @click="dialogProperty = p; dialog = true" variant="plain" color="warning" icon="fa-solid fa-triangle-exclamation" size="small"
+                        <v-btn @click="dialogProperty = p; dialog = true" variant="plain" color="warning" icon="fa-solid fa-triangle-exclamation" size="small" class="d-print-none"
                                v-if="p.missingValue"></v-btn>
-                        <v-btn @click="dialogProperty = p; dialog = true" variant="plain" icon="fa-solid fa-circle-info" size="small" v-if="!p.missingValue"></v-btn>
+                        <v-btn @click="dialogProperty = p; dialog = true" variant="plain" icon="fa-solid fa-circle-info" size="small" v-if="!p.missingValue" class="d-print-none"></v-btn>
                     </td>
                 </tr>
                 </tbody>
@@ -44,7 +44,7 @@
                     <v-list-item border v-for="fv in dialogProperty.foodValues" :key="`${dialogProperty.id}_${fv.id}`">
                         <template #prepend>
                             <v-progress-circular size="55" width="5" :model-value="(fv.value/dialogProperty.propertyAmountTotal)*100"
-                                                 :color="colorScale((fv.value/dialogProperty.propertyAmountTotal)*100)" v-if="fv.value != null">
+                                                 :color="colorScale((fv.value/dialogProperty.propertyAmountTotal)*100)" v-if="fv.value != null && dialogProperty.propertyAmountTotal > 0">
                                 {{ Math.round((fv.value / dialogProperty.propertyAmountTotal) * 100) }}%
                             </v-progress-circular>
                             <v-progress-circular size="55" width="5" v-if="fv.value == null">?</v-progress-circular>

@@ -300,6 +300,12 @@ PRIVACY_URL=
 IMPRINT_URL=
 ```
 
+#### Rate Limits
+
+There are some rate limits that can be configured.
+
+- RATELIMIT_URL_IMPORT_REQUESTS: limit the number of external URL import requests. Useful to prevent your server from being abused for malicious requests.
+
 ### Authentication
 
 All configurable variables regarding authentication.
@@ -445,6 +451,13 @@ Required settings
 S3_ACCESS_KEY=
 S3_SECRET_ACCESS_KEY=
 S3_BUCKET_NAME=
+```
+
+Alternatively you can point to a file containing the S3_SECRET_ACCESS_KEY value. If using containers make sure the file is
+persistent and available inside the container.
+
+```
+S3_SECRET_ACCESS_KEY_FILE=/path/to/file.txt
 ```
 
 Optional settings (only copy the ones you need)

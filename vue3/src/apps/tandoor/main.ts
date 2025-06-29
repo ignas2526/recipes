@@ -14,8 +14,8 @@ import {setupI18n} from "@/i18n";
 import MealPlanPage from "@/pages/MealPlanPage.vue";
 
 const routes = [
-    {path: '/', component: () => import("@/pages/StartPage.vue"), name: 'view_home'},
-    {path: '/search', redirect: {name: 'view_home'}},
+    {path: '/', component: () => import("@/pages/StartPage.vue"), name: 'StartPage'},
+    {path: '/search', redirect: {name: 'StartPage'}},
     {path: '/test', component: () => import("@/pages/TestPage.vue"), name: 'view_test'},
     {path: '/help', component: () => import("@/pages/HelpPage.vue"), name: 'HelpPage'},
     {
@@ -29,6 +29,7 @@ const routes = [
             {path: 'space-members', component: () => import("@/components/settings/SpaceMemberSettings.vue"), name: 'SpaceMemberSettings'},
             {path: 'user-space', component: () => import("@/components/settings/UserSpaceSettings.vue"), name: 'UserSpaceSettings'},
             {path: 'open-data-import', component: () => import("@/components/settings/OpenDataImportSettings.vue"), name: 'OpenDataImportSettings'},
+            {path: 'export', component: () => import("@/components/settings/ExportDataSettings.vue"), name: 'ExportDataSettings'},
             {path: 'api', component: () => import("@/components/settings/ApiSettings.vue"), name: 'ApiSettings'},
         ]
     },
@@ -45,6 +46,7 @@ const routes = [
 
     {path: '/list/:model?', component: () => import("@/pages/ModelListPage.vue"), props: true, name: 'ModelListPage'},
     {path: '/edit/:model/:id?', component: () => import("@/pages/ModelEditPage.vue"), props: true, name: 'ModelEditPage'},
+    {path: '/database', component: () => import("@/pages/DatabasePage.vue"), props: true, name: 'DatabasePage'},
 
     {path: '/ingredient-editor', component: () => import("@/pages/IngredientEditorPage.vue"), name: 'IngredientEditorPage'},
     {path: '/property-editor', component: () => import("@/pages/PropertyEditorPage.vue"), name: 'PropertyEditorPage'},

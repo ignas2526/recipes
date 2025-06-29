@@ -3,6 +3,7 @@ import {fileURLToPath, URL} from 'node:url'
 import {defineConfig} from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vuetify, {transformAssetUrls} from 'vite-plugin-vuetify'
+import {VitePWA} from "vite-plugin-pwa";
 import path from 'path'
 
 // https://vitejs.dev/config/
@@ -16,6 +17,16 @@ export default defineConfig({
             autoImport: true,
             styles: { configFile: path.resolve(__dirname, './src/styles/settings.scss') },
         }),
+        VitePWA({
+            registerType: 'autoUpdate',
+            strategies: 'injectManifest',
+            srcDir: 'src',
+            filename: 'sw.ts',
+            injectManifest: {
+                swDest: "../cookbook/templates/sw.js",
+                injectionPoint: undefined
+            }
+        })
     ],
     resolve: {
         alias: {

@@ -61,7 +61,8 @@ from rest_framework.viewsets import ViewSetMixin
 from rest_framework.serializers import CharField, IntegerField, UUIDField
 from treebeard.exceptions import InvalidMoveToDescendant, InvalidPosition, PathOverflow
 
-from cookbook.forms import ImportForm
+from cookbook.connectors.connector_manager import ConnectorManager, ActionType
+from cookbook.forms import ImportForm, ImportExportBase
 from cookbook.helper import recipe_url_import as helper
 from cookbook.helper.HelperFunctions import str2bool, validate_import_url
 from cookbook.helper.image_processing import handle_image
@@ -84,14 +85,14 @@ from cookbook.models import (Automation, BookmarkletImport, ConnectorConfig, Coo
                              RecipeBookEntry, ShareLink, ShoppingListEntry,
                              ShoppingListRecipe, Space, Step, Storage, Supermarket, SupermarketCategory,
                              SupermarketCategoryRelation, Sync, SyncLog, Unit, UnitConversion,
-                             UserFile, UserPreference, UserSpace, ViewLog
+                             UserFile, UserPreference, UserSpace, ViewLog, RecipeImport
                              )
 from cookbook.provider.dropbox import Dropbox
 from cookbook.provider.local import Local
 from cookbook.provider.nextcloud import Nextcloud
 from cookbook.serializer import (AccessTokenSerializer, AutomationSerializer, AutoMealPlanSerializer,
                                  BookmarkletImportListSerializer, BookmarkletImportSerializer,
-                                 ConnectorConfigConfigSerializer, CookLogSerializer, CustomFilterSerializer,
+                                 CookLogSerializer, CustomFilterSerializer,
                                  ExportLogSerializer, FoodInheritFieldSerializer, FoodSerializer,
                                  FoodShoppingUpdateSerializer, FoodSimpleSerializer, GroupSerializer,
                                  ImportLogSerializer, IngredientSerializer, IngredientSimpleSerializer,
@@ -108,7 +109,8 @@ from cookbook.serializer import (AccessTokenSerializer, AutomationSerializer, Au
                                  UnitConversionSerializer, UnitSerializer, UserFileSerializer, UserPreferenceSerializer,
                                  UserSerializer, UserSpaceSerializer, ViewLogSerializer,
                                  LocalizationSerializer, ServerSettingsSerializer, RecipeFromSourceResponseSerializer, ShoppingListEntryBulkCreateSerializer, FdcQuerySerializer,
-                                 AiImportSerializer, ImportOpenDataSerializer, ImportOpenDataMetaDataSerializer, ImportOpenDataResponseSerializer
+                                 AiImportSerializer, ImportOpenDataSerializer, ImportOpenDataMetaDataSerializer, ImportOpenDataResponseSerializer, ExportRequestSerializer,
+                                 RecipeImportSerializer, ConnectorConfigSerializer
                                  )
 from cookbook.version_info import TANDOOR_VERSION
 from cookbook.views.import_export import get_integration
@@ -584,17 +586,7 @@ class StorageViewSet(LoggingMixin, viewsets.ModelViewSet):
     queryset = Storage.objects
     serializer_class = StorageSerializer
     permission_classes = [CustomIsAdmin & CustomTokenHasReadWriteScope]
-    pagination_disabled = True
-
-    def get_queryset(self):
-        return self.queryset.filter(space=self.request.space)
-
-
-class ConnectorConfigConfigViewSet(LoggingMixin, viewsets.ModelViewSet):
-    queryset = ConnectorConfig.objects
-    serializer_class = ConnectorConfigConfigSerializer
-    permission_classes = [CustomIsAdmin & CustomTokenHasReadWriteScope]
-    pagination_disabled = True
+    pagination_class = DefaultPagination
 
     def get_queryset(self):
         return self.queryset.filter(space=self.request.space)
@@ -609,6 +601,21 @@ class SyncViewSet(LoggingMixin, viewsets.ModelViewSet):
     def get_queryset(self):
         return self.queryset.filter(space=self.request.space)
 
+    @extend_schema(responses=SyncLogSerializer(many=False))
+    @decorators.action(detail=True, pagination_class=None, methods=['POST'], )
+    def query_synced_folder(self, request, pk):
+        sync = get_object_or_404(Sync, pk=pk)
+
+        sync_log = None
+        if sync.storage.method == Storage.DROPBOX:
+            sync_log = Dropbox.import_all(sync)
+        if sync.storage.method == Storage.NEXTCLOUD:
+            sync_log = Nextcloud.import_all(sync)
+        if sync.storage.method == Storage.LOCAL:
+            sync_log = Local.import_all(sync)
+
+        return Response(SyncLogSerializer(sync_log, many=False, context={'request': self.request}).data)
+
 
 class SyncLogViewSet(LoggingMixin, viewsets.ReadOnlyModelViewSet):
     queryset = SyncLog.objects
@@ -618,6 +625,42 @@ class SyncLogViewSet(LoggingMixin, viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         return self.queryset.filter(sync__space=self.request.space)
+
+
+class RecipeImportViewSet(LoggingMixin, viewsets.ModelViewSet):
+    queryset = RecipeImport.objects
+    serializer_class = RecipeImportSerializer
+    permission_classes = [CustomIsAdmin & CustomTokenHasReadWriteScope]
+    pagination_class = DefaultPagination
+
+    def get_queryset(self):
+        return self.queryset.filter(space=self.request.space)
+
+    @extend_schema(responses=RecipeSerializer(many=False))
+    @decorators.action(detail=True, pagination_class=None, methods=['POST'], )
+    def import_recipe(self, request, pk):
+        new_recipe = get_object_or_404(RecipeImport, pk=pk, space=request.space)
+        recipe = new_recipe.convert_to_recipe(request.user)
+
+        return Response(RecipeSerializer(recipe, many=False, context={'request': self.request}).data)
+
+    @decorators.action(detail=False, pagination_class=None, methods=['POST'], )
+    def import_all(self, request):
+        imports = RecipeImport.objects.filter(space=request.space).all()
+        for new_recipe in imports:
+            new_recipe.convert_to_recipe(request.user)
+
+        return Response({'msg': 'ok'}, status=status.HTTP_200_OK)
+
+
+class ConnectorConfigViewSet(LoggingMixin, viewsets.ModelViewSet):
+    queryset = ConnectorConfig.objects
+    serializer_class = ConnectorConfigSerializer
+    permission_classes = [CustomIsAdmin & CustomTokenHasReadWriteScope]
+    pagination_class = DefaultPagination
+
+    def get_queryset(self):
+        return self.queryset.filter(space=self.request.space)
 
 
 class SupermarketViewSet(LoggingMixin, StandardFilterModelViewSet):
@@ -1254,8 +1297,6 @@ class RecipeViewSet(LoggingMixin, viewsets.ModelViewSet):
         SLR = RecipeShoppingEditor(request.user, request.space, id=list_recipe, recipe=obj, mealplan=mealplan,
                                    servings=servings)
 
-        content = {'msg': _(f'{obj.name} was added to the shopping list.')}
-        http_status = status.HTTP_204_NO_CONTENT
         if servings and servings <= 0:
             result = SLR.delete()
         elif list_recipe:
@@ -1392,6 +1433,7 @@ class ShoppingListRecipeViewSet(LoggingMixin, viewsets.ModelViewSet):
                 )
 
             ShoppingListEntry.objects.bulk_create(entries)
+            ConnectorManager.add_work(ActionType.CREATED, *entries)
             return Response(serializer.validated_data)
         else:
             return Response(serializer.errors, 400)
@@ -1952,6 +1994,39 @@ class AppImportView(APIView):
             return Response({'error': True, 'msg': form.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 
+class AppExportView(APIView):
+    throttle_classes = [RecipeImportThrottle]
+    permission_classes = [CustomIsUser & CustomTokenHasReadWriteScope]
+
+    @extend_schema(request=ExportRequestSerializer(many=False), responses=ExportLogSerializer(many=False))
+    def post(self, request, *args, **kwargs):
+
+        serializer = ExportRequestSerializer(data=request.data, partial=True)
+        if serializer.is_valid():
+            if serializer.validated_data['all']:
+                recipes = Recipe.objects.filter(space=request.space, internal=True).all()
+            elif serializer.validated_data['custom_filter']:
+                search = RecipeSearch(request, filter=serializer.initial_data['custom_filter']['id'])
+                recipes = search.get_queryset(Recipe.objects.filter(space=request.space, internal=True))
+            elif len(serializer.validated_data['recipes']) > 0:
+                recipes = Recipe.objects.filter(space=request.space, internal=True, id__in=[item['id'] for item in serializer.initial_data['recipes']]).all()
+
+            integration = get_integration(request, serializer.validated_data['type'])
+
+            if serializer.validated_data['type'] == ImportExportBase.PDF and not settings.ENABLE_PDF_EXPORT:
+                return JsonResponse({'error': _('The PDF Exporter is not enabled on this instance as it is still in an experimental state.')})
+
+            el = ExportLog.objects.create(type=serializer.validated_data['type'], created_by=request.user, space=request.space)
+
+            t = threading.Thread(target=integration.do_export, args=[recipes, el])
+            t.setDaemon(True)
+            t.start()
+
+            return Response(ExportLogSerializer(context={'request': request}).to_representation(el), status=status.HTTP_200_OK)
+
+        return Response({'error': True, 'msg': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+
 class FdcSearchView(APIView):
     permission_classes = [CustomIsUser & CustomTokenHasReadWriteScope]
 
@@ -2161,7 +2236,29 @@ class ServerSettingsViewSet(viewsets.GenericViewSet):
         s['hosted'] = settings.HOSTED
         s['debug'] = settings.DEBUG
         s['version'] = TANDOOR_VERSION
+        s['unauthenticated_theme_from_space'] = settings.UNAUTHENTICATED_THEME_FROM_SPACE
+        s['force_theme_from_space'] = settings.FORCE_THEME_FROM_SPACE
 
+        # include the settings handled by the space
+        space = None
+        if not request.user.is_authenticated and settings.UNAUTHENTICATED_THEME_FROM_SPACE > 0:
+            with scopes_disabled():
+                space = Space.objects.filter(id=settings.UNAUTHENTICATED_THEME_FROM_SPACE).first()
+        if request.user.is_authenticated and settings.FORCE_THEME_FROM_SPACE:
+            with scopes_disabled():
+                space = Space.objects.filter(id=settings.FORCE_THEME_FROM_SPACE).first()
+
+        if space:
+            s['logo_color_32'] = space.logo_color_32.file if space.logo_color_32 else None
+            s['logo_color_128'] = space.logo_color_128.file if space.logo_color_128 else None
+            s['logo_color_144'] = space.logo_color_144.file if space.logo_color_144 else None
+            s['logo_color_180'] = space.logo_color_180.file if space.logo_color_180 else None
+            s['logo_color_192'] = space.logo_color_192.file if space.logo_color_192 else None
+            s['logo_color_512'] = space.logo_color_512.file if space.logo_color_512 else None
+            s['logo_color_svg'] = space.logo_color_svg.file if space.logo_color_svg else None
+            s['custom_theme'] = space.custom_space_theme.file if space.custom_space_theme else None
+            s['nav_logo'] = space.nav_logo.file if space.nav_logo else None
+            s['nav_bg_color'] = space.nav_bg_color
         return Response(ServerSettingsSerializer(s, many=False).data)
 
 
@@ -2183,8 +2280,8 @@ def get_recipe_provider(recipe):
 )
 @api_view(['GET'])
 @permission_classes([CustomIsUser & CustomTokenHasReadWriteScope])
-def get_external_file_link(request, recipe_id):
-    recipe = get_object_or_404(Recipe, pk=recipe_id, space=request.space)
+def get_external_file_link(request, pk):
+    recipe = get_object_or_404(Recipe, pk=pk, space=request.space)
     if not recipe.link:
         recipe.link = get_recipe_provider(recipe).get_share_link(recipe)
         recipe.save()
@@ -2197,9 +2294,9 @@ def get_external_file_link(request, recipe_id):
     responses=None,
 )
 @api_view(['GET'])
-@permission_classes([(CustomIsGuest | CustomIsUser) & CustomTokenHasReadWriteScope])
-def get_recipe_file(request, recipe_id):
-    recipe = get_object_or_404(Recipe, pk=recipe_id, space=request.space)
+@permission_classes([CustomRecipePermission & CustomTokenHasReadWriteScope])
+def get_recipe_file(request, pk):
+    recipe = get_object_or_404(Recipe, pk=pk) # space check handled by CustomRecipePermission
     if recipe.storage:
         return FileResponse(get_recipe_provider(recipe).get_file(recipe), filename=f'{recipe.name}.pdf')
     else:

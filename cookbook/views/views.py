@@ -24,6 +24,7 @@ from django.utils.datetime_safe import date
 from django.utils.translation import gettext as _
 from django_scopes import scopes_disabled
 from drf_spectacular.views import SpectacularRedocView, SpectacularSwaggerView
+from rest_framework.response import Response
 
 from cookbook.forms import CommentForm, Recipe, SearchPreferenceForm, SpaceCreateForm, SpaceJoinForm, User, UserCreateForm, UserPreference
 from cookbook.helper.HelperFunctions import str2bool
@@ -197,10 +198,14 @@ def meal_plan(request):
     return render(request, 'meal_plan.html', {})
 
 
-@group_required('guest')
 def recipe_pdf_viewer(request, pk):
-    recipe = get_object_or_404(Recipe, pk=pk, space=request.space)
-    return render(request, 'pdf_viewer.html', {'recipe_id': pk})
+    with scopes_disabled():
+        recipe = get_object_or_404(Recipe, pk=pk)
+        if share_link_valid(recipe, request.GET.get('share', None)) or (has_group_permission(
+                request.user, ['guest']) and recipe.space == request.space):
+
+            return render(request, 'pdf_viewer.html', {'recipe_id': pk, 'share': request.GET.get('share', None)})
+        return HttpResponseRedirect(reverse('index'))
 
 
 @group_required('guest')
@@ -517,6 +522,9 @@ def report_share_abuse(request, token):
             messages.add_message(request, messages.WARNING, _('Recipe sharing link has been disabled! For additional information please contact the page administrator.'))
     return HttpResponseRedirect(reverse('index'))
 
+
+def service_worker(request):
+    return
 
 def web_manifest(request):
     theme_values = get_theming_values(request)
