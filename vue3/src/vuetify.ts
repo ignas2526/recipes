@@ -8,6 +8,15 @@ import {DateTime} from "luxon";
 
 // https://vuetifyjs.com/en/introduction/why-vuetify/#feature-guides
 export default createVuetify({
+    display: {
+        thresholds: {
+            xs: 0,
+            sm: 600,
+            md: 900,
+            lg: 1220,
+            xl: 1920,
+        },
+    },
     defaults: {
         // disabled as this leads to cards overflowing if not careful, manually set on cards containing a multiselect until proper solution is found
         // VCard: {
