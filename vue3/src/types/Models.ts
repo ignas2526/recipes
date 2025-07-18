@@ -7,7 +7,7 @@ import {
     MealPlan,
     MealType,
     Property, PropertyType,
-    Recipe, RecipeBook, RecipeBookEntry, RecipeImport, ShoppingListEntry,
+    Recipe, RecipeBook, RecipeBookEntry, RecipeImport, SearchFields, ShoppingListEntry,
     Step,
     Supermarket,
     SupermarketCategory, Sync, SyncLog,
@@ -18,6 +18,7 @@ import {
 import {VDataTable} from "vuetify/components";
 import {getNestedProperty} from "@/utils/utils";
 import {useUserPreferenceStore} from "@/stores/UserPreferenceStore";
+import {defineAsyncComponent, shallowRef} from "vue";
 
 type VDataTableProps = InstanceType<typeof VDataTable>['$props']
 
@@ -40,7 +41,7 @@ export function getGenericModelFromString(modelName: EditorSupportedModels, t: a
  * register a given model instance in the supported models list
  * @param model model to register
  */
-function registerModel(model: Model) {
+export function registerModel(model: Model) {
     SUPPORTED_MODELS.set(model.name.toLowerCase(), model)
 }
 
@@ -89,6 +90,8 @@ export type Model = {
     localizationKeyDescription: string,
     icon: string,
     toStringKeys: Array<string>,
+
+    editorComponent?: any,
 
     itemValue: string | undefined,
     itemLabel: string | undefined,
@@ -142,6 +145,7 @@ export type EditorSupportedModels =
     | 'CookLog'
     | 'ViewLog'
     | 'ConnectorConfig'
+    | 'SearchFields'
 
 // used to type methods/parameters in conjunction with configuration type
 export type EditorSupportedTypes =
@@ -175,12 +179,15 @@ export type EditorSupportedTypes =
     | CookLog
     | ViewLog
     | ConnectorConfig
+    | SearchFields
 
 export const TFood = {
     name: 'Food',
     localizationKey: 'Food',
     localizationKeyDescription: 'FoodHelp',
     icon: 'fa-solid fa-carrot',
+
+    editorComponent: defineAsyncComponent(() => import(`@/components/model_editors/FoodEditor.vue`)),
 
     isPaginated: true,
     isMerge: true,
@@ -202,6 +209,8 @@ export const TUnit = {
     localizationKeyDescription: 'UnitHelp',
     icon: 'fa-solid fa-scale-balanced',
 
+    editorComponent: defineAsyncComponent(() => import(`@/components/model_editors/UnitEditor.vue`)),
+
     isPaginated: true,
     isMerge: true,
     mergeAutomation: 'UNIT_ALIAS',
@@ -221,6 +230,8 @@ export const TKeyword = {
     localizationKeyDescription: 'KeywordHelp',
     icon: 'fa-solid fa-tags',
 
+    editorComponent: defineAsyncComponent(() => import(`@/components/model_editors/KeywordEditor.vue`)),
+
     isPaginated: true,
     isMerge: true,
     mergeAutomation: 'KEYWORD_ALIAS',
@@ -238,6 +249,8 @@ export const TRecipe = {
     localizationKey: 'Recipe',
     localizationKeyDescription: 'RecipeHelp',
     icon: 'fa-solid fa-book',
+
+    editorComponent: defineAsyncComponent(() => import(`@/components/model_editors/RecipeEditor.vue`)),
 
     isPaginated: true,
     toStringKeys: ['name'],
@@ -293,6 +306,8 @@ export const TMealType = {
     localizationKeyDescription: 'MealTypeHelp',
     icon: 'fa-solid fa-utensils',
 
+    editorComponent: defineAsyncComponent(() => import(`@/components/model_editors/MealTypeEditor.vue`)),
+
     isPaginated: true,
     toStringKeys: ['name'],
 
@@ -308,6 +323,8 @@ export const TMealPlan = {
     localizationKey: 'Meal_Plan',
     localizationKeyDescription: 'MealPlanHelp',
     icon: 'fa-solid fa-calendar-days',
+
+    editorComponent: defineAsyncComponent(() => import(`@/components/model_editors/MealPlanEditor.vue`)),
 
     isPaginated: true,
     toStringKeys: ['title', 'recipe.name'],
@@ -327,6 +344,8 @@ export const TRecipeBook = {
     localizationKey: 'Recipe_Book',
     localizationKeyDescription: 'RecipeBookHelp',
     icon: 'fa-solid fa-book-bookmark',
+
+    editorComponent: defineAsyncComponent(() => import(`@/components/model_editors/RecipeBookEditor.vue`)),
 
     isPaginated: true,
     toStringKeys: ['name'],
@@ -364,6 +383,8 @@ export const TCustomFilter = {
     localizationKey: 'SavedSearch',
     localizationKeyDescription: 'SavedSearchHelp',
     icon: 'fa-solid fa-filter',
+
+    editorComponent: defineAsyncComponent(() => import(`@/components/model_editors/CustomFilterEditor.vue`)),
 
     isPaginated: true,
     toStringKeys: ['name'],
@@ -403,6 +424,8 @@ export const TSupermarket = {
     localizationKeyDescription: 'SupermarketHelp',
     icon: 'fa-solid fa-store',
 
+    editorComponent: defineAsyncComponent(() => import(`@/components/model_editors/SupermarketEditor.vue`)),
+
     isPaginated: true,
     toStringKeys: ['name'],
 
@@ -418,6 +441,8 @@ export const TSupermarketCategory = {
     localizationKey: 'Category',
     localizationKeyDescription: 'SupermarketCategoryHelp',
     icon: 'fa-solid fa-boxes-stacked',
+
+    editorComponent: defineAsyncComponent(() => import(`@/components/model_editors/SupermarketCategoryEditor.vue`)),
 
     isPaginated: true,
     isMerge: true,
@@ -435,6 +460,8 @@ export const TShoppingListEntry = {
     localizationKey: 'ShoppingListEntry',
     localizationKeyDescription: 'ShoppingListEntryHelp',
     icon: 'fa-solid fa-list-check',
+
+    editorComponent: defineAsyncComponent(() => import(`@/components/model_editors/ShoppingListEntryEditor.vue`)),
 
     disableListView: true,
     isPaginated: true,
@@ -455,6 +482,8 @@ export const TPropertyType = {
     localizationKeyDescription: 'PropertyTypeHelp',
     icon: 'fa-solid fa-database',
 
+    editorComponent: defineAsyncComponent(() => import(`@/components/model_editors/PropertyTypeEditor.vue`)),
+
     isPaginated: true,
     toStringKeys: ['name'],
 
@@ -470,6 +499,8 @@ export const TProperty = {
     localizationKey: 'Property',
     localizationKeyDescription: 'PropertyHelp',
     icon: 'fa-solid fa-database',
+
+    editorComponent: defineAsyncComponent(() => import(`@/components/model_editors/PropertyEditor.vue`)),
 
     disableListView: true,
     isPaginated: true,
@@ -488,6 +519,8 @@ export const TUnitConversion = {
     localizationKey: 'UnitConversion',
     localizationKeyDescription: 'UnitConversionHelp',
     icon: 'fa-solid fa-exchange-alt',
+
+    editorComponent: defineAsyncComponent(() => import(`@/components/model_editors/UnitConversionEditor.vue`)),
 
     isPaginated: true,
     toStringKeys: ['food.name', 'baseUnit.name', 'convertedUnit.name'],
@@ -509,6 +542,8 @@ export const TUserFile = {
     localizationKeyDescription: 'UserFileHelp',
     icon: 'fa-solid fa-file',
 
+    editorComponent: defineAsyncComponent(() => import(`@/components/model_editors/UserFileEditor.vue`)),
+
     isPaginated: true,
     toStringKeys: ['name'],
 
@@ -524,6 +559,8 @@ export const TAutomation = {
     localizationKey: 'Automation',
     localizationKeyDescription: 'AutomationHelp',
     icon: 'fa-solid fa-robot',
+
+    editorComponent: defineAsyncComponent(() => import(`@/components/model_editors/AutomationEditor.vue`)),
 
     isPaginated: true,
     toStringKeys: ['name'],
@@ -582,6 +619,8 @@ export const TAccessToken = {
     localizationKeyDescription: 'AccessTokenHelp',
     icon: 'fa-solid fa-key',
 
+    editorComponent: defineAsyncComponent(() => import(`@/components/model_editors/AccessTokenEditor.vue`)),
+
     disableListView: true,
     isPaginated: true,
     toStringKeys: ['token'],
@@ -599,6 +638,8 @@ export const TUserSpace = {
     localizationKey: 'SpaceMembers',
     localizationKeyDescription: 'SpaceMembersHelp',
     icon: 'fa-solid fa-users',
+
+    editorComponent: defineAsyncComponent(() => import(`@/components/model_editors/UserSpaceEditor.vue`)),
 
     disableListView: true,
     isPaginated: true,
@@ -619,6 +660,8 @@ export const TInviteLink = {
     localizationKeyDescription: 'InviteLinkHelp',
     icon: 'fa-solid fa-link',
 
+    editorComponent: defineAsyncComponent(() => import(`@/components/model_editors/InviteLinkEditor.vue`)),
+
     disableListView: true,
     isPaginated: true,
     toStringKeys: ['email', 'role'],
@@ -638,6 +681,8 @@ export const TStorage = {
     localizationKeyDescription: 'StorageHelp',
     icon: 'fa-solid fa-cloud',
 
+    editorComponent: defineAsyncComponent(() => import(`@/components/model_editors/StorageEditor.vue`)),
+
     disableListView: false,
     toStringKeys: ['name'],
     isPaginated: true,
@@ -654,6 +699,8 @@ export const TSync = {
     localizationKey: 'SyncedPath',
     localizationKeyDescription: 'SyncedPathHelp',
     icon: 'fa-solid fa-folder-plus',
+
+    editorComponent: defineAsyncComponent(() => import(`@/components/model_editors/SyncEditor.vue`)),
 
     disableListView: false,
     toStringKeys: ['path'],
@@ -720,6 +767,8 @@ export const TConnectorConfig = {
     localizationKeyDescription: 'ConnectorConfigHelp',
     icon: 'fa-solid fa-arrows-turn-to-dots',
 
+    editorComponent: defineAsyncComponent(() => import(`@/components/model_editors/ConnectorConfigEditor.vue`)),
+
     disableListView: false,
     toStringKeys: ['name'],
     isPaginated: true,
@@ -752,6 +801,23 @@ export const TFoodInheritField = {
     isPaginated: false,
 } as Model
 registerModel(TFoodInheritField)
+
+export const TSearchFields = {
+    name: 'SearchFields',
+    localizationKey: 'SearchFields',
+    localizationKeyDescription: '',
+    icon: 'fa-solid fa-search',
+
+    disableListView: true,
+    toStringKeys: ['name'],
+
+    disableCreate: true,
+    disableDelete: true,
+    disableUpdate: true,
+
+    isPaginated: false,
+} as Model
+registerModel(TSearchFields)
 
 
 /**
@@ -877,7 +943,7 @@ export class GenericModel {
             throw new Error('Cannot merge on this model!')
         } else {
             let mergeRequestParams: any = {id: source.id, target: target.id}
-            mergeRequestParams[this.model.name.toLowerCase()] = {}
+            mergeRequestParams[this.model.name.charAt(0).toLowerCase() + this.model.name.slice(1)] = {}
 
             return this.api[`api${this.model.name}MergeUpdate`](mergeRequestParams)
         }

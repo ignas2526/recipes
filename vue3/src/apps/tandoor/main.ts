@@ -1,5 +1,5 @@
 import {createApp} from "vue";
-import {createRouter, createWebHashHistory, createWebHistory} from 'vue-router'
+import {createRouter, createWebHistory} from 'vue-router'
 import {createPinia} from 'pinia'
 // @ts-ignore
 import App from './Tandoor.vue'
@@ -12,8 +12,9 @@ import { createRulesPlugin } from 'vuetify/labs/rules'
 
 import {setupI18n} from "@/i18n";
 import MealPlanPage from "@/pages/MealPlanPage.vue";
+import {TandoorPlugin} from "@/types/Plugins.ts";
 
-const routes = [
+let routes = [
     {path: '/', component: () => import("@/pages/StartPage.vue"), name: 'StartPage'},
     {path: '/search', redirect: {name: 'StartPage'}},
     {path: '/test', component: () => import("@/pages/TestPage.vue"), name: 'view_test'},
@@ -25,6 +26,7 @@ const routes = [
             {path: 'cosmetic', component: () => import("@/components/settings/CosmeticSettings.vue"), name: 'CosmeticSettings'},
             {path: 'shopping', component: () => import("@/components/settings/ShoppingSettings.vue"), name: 'ShoppingSettings'},
             {path: 'meal-plan', component: () => import("@/components/settings/MealPlanSettings.vue"), name: 'MealPlanSettings'},
+            {path: 'search', component: () => import("@/components/settings/SearchSettings.vue"), name: 'SearchSettings'},
             {path: 'space', component: () => import("@/components/settings/SpaceSettings.vue"), name: 'SpaceSettings'},
             {path: 'space-members', component: () => import("@/components/settings/SpaceMemberSettings.vue"), name: 'SpaceMemberSettings'},
             {path: 'user-space', component: () => import("@/components/settings/UserSpaceSettings.vue"), name: 'UserSpaceSettings'},
@@ -50,7 +52,16 @@ const routes = [
 
     {path: '/ingredient-editor', component: () => import("@/pages/IngredientEditorPage.vue"), name: 'IngredientEditorPage'},
     {path: '/property-editor', component: () => import("@/pages/PropertyEditorPage.vue"), name: 'PropertyEditorPage'},
+
+    {path: '/space-setup', component: () => import("@/pages/SpaceSetupPage.vue"), name: 'SpaceSetupPage'},
 ]
+
+const pluginModules = import.meta.glob('@/plugins/*/plugin.ts', { eager: true })
+const tandoorPlugins = [] as TandoorPlugin[]
+Object.values(pluginModules).forEach(module => {
+    tandoorPlugins.push(module.plugin)
+    routes = routes.concat(module.plugin.routes)
+})
 
 const router = createRouter({
     history: createWebHistory(),
