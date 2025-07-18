@@ -90,6 +90,7 @@
 
 import {TKeyword, TRecipe, TUnit, TUserSpace} from "@/types/Models";
 import {useUserPreferenceStore} from "../stores/UserPreferenceStore";
+import HelpDialog from "@/components/dialogs/HelpDialog.vue";
 </script>
 
 <style scoped>

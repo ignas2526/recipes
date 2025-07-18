@@ -22,8 +22,10 @@ from django.contrib import messages
 from django.utils.translation import gettext_lazy as _
 from dotenv import load_dotenv
 
+
 def extract_bool(env_key, default):
     return bool(int(os.getenv(env_key, default)))
+
 
 def extract_comma_list(env_key, default=None):
     if os.getenv(env_key):
@@ -38,9 +40,6 @@ def extract_comma_list(env_key, default=None):
 load_dotenv()
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCRIPT_NAME = os.getenv('SCRIPT_NAME', '')
-# path for django_js_reverse to generate the javascript file containing all urls. Only done because the default command (collectstatic_js_reverse) fails to update the manifest
-JS_REVERSE_OUTPUT_PATH = os.path.join(BASE_DIR, "cookbook/static/django_js_reverse")
-JS_REVERSE_SCRIPT_PREFIX = os.getenv('JS_REVERSE_SCRIPT_PREFIX', SCRIPT_NAME)
 
 STATIC_URL = os.getenv('STATIC_URL', '/static/')
 STATIC_ROOT = os.getenv('STATIC_ROOT', os.path.join(BASE_DIR, "staticfiles"))
@@ -81,6 +80,10 @@ LOGGING = {
     },
     "loggers": {
         'recipes': {
+            'handlers': ['console'],
+            'level': LOG_LEVEL,
+        },
+        'django': {
             'handlers': ['console'],
             'level': LOG_LEVEL,
         },
@@ -170,7 +173,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.postgres',
     'oauth2_provider',
-    'django_tables2',
     'corsheaders',
     'crispy_forms',
     'crispy_bootstrap4',
@@ -179,13 +181,16 @@ INSTALLED_APPS = [
     'drf_spectacular',
     'drf_spectacular_sidecar',
     'django_cleanup.apps.CleanupConfig',
-    'webpack_loader',
     'django_vite',
-    'django_js_reverse',
     'hcaptcha',
+
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
+    'allauth.headless',
+    'allauth.mfa',
+    'allauth.usersessions',
+
     'cookbook.apps.CookbookConfig',
     'treebeard',
 ]
@@ -235,11 +240,13 @@ SOCIAL_PROVIDERS = extract_comma_list('SOCIAL_PROVIDERS')
 SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'
 INSTALLED_APPS = INSTALLED_APPS + SOCIAL_PROVIDERS
 
-ACCOUNT_SIGNUP_EMAIL_ENTER_TWICE = True
 ACCOUNT_MAX_EMAIL_ADDRESSES = 3
-ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'email2*', 'username*', 'password1*', 'password2*']
 ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 90
 ACCOUNT_LOGOUT_ON_GET = True
+
+USERSESSIONS_TRACK_ACTIVITY = True
+HEADLESS_SERVE_SPECIFICATION = True
 
 try:
     SOCIALACCOUNT_PROVIDERS = ast.literal_eval(os.getenv('SOCIALACCOUNT_PROVIDERS') if os.getenv('SOCIALACCOUNT_PROVIDERS') else '{}')
@@ -261,6 +268,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'allauth.usersessions.middleware.UserSessionsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -513,6 +521,16 @@ CACHES = {
     }
 }
 
+if REDIS_HOST:
+    CACHES['default'] = {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': f'redis://{REDIS_HOST}:{REDIS_PORT}',
+    }
+    if REDIS_USERNAME and not REDIS_PASSWORD:
+        CACHES['default']['LOCATION'] = f'redis://{REDIS_USERNAME}@{REDIS_HOST}:{REDIS_PORT}'
+    if REDIS_USERNAME and REDIS_PASSWORD:
+        CACHES['default']['LOCATION'] = f'redis://{REDIS_USERNAME}:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}'
+
 # Vue webpack settings
 VUE_DIR = os.path.join(BASE_DIR, 'vue')
 
@@ -665,18 +683,6 @@ ACCOUNT_RATE_LIMITS = {
 
 DISABLE_EXTERNAL_CONNECTORS = extract_bool('DISABLE_EXTERNAL_CONNECTORS', False)
 EXTERNAL_CONNECTORS_QUEUE_SIZE = int(os.getenv('EXTERNAL_CONNECTORS_QUEUE_SIZE', 100))
-
-# ACCOUNT_SIGNUP_FORM_CLASS = 'cookbook.forms.AllAuthSignupForm'
-ACCOUNT_FORMS = {'signup': 'cookbook.forms.AllAuthSignupForm', 'reset_password': 'cookbook.forms.CustomPasswordResetForm'}
-
-ACCOUNT_EMAIL_UNKNOWN_ACCOUNTS = False
-ACCOUNT_RATE_LIMITS = {
-    "change_password": "1/m/user",
-    "reset_password": "1/m/ip,1/m/key",
-    "reset_password_from_key": "1/m/ip",
-    "signup": "5/m/ip",
-    "login": "5/m/ip",
-}
 
 mimetypes.add_type("text/javascript", ".js", True)
 mimetypes.add_type("text/javascript", ".mjs", True)

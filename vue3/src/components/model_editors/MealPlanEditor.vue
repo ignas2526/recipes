@@ -24,6 +24,19 @@
 
                         <v-row>
                             <v-col cols="12" md="6">
+                                <ModelSelect model="Recipe" v-model="editingObj.recipe"
+                                             @update:modelValue="editingObj.servings = editingObj.recipe ? editingObj.recipe.servings : 1"></ModelSelect>
+                                <!--                                <v-number-input label="Days" control-variant="split" :min="1"></v-number-input>-->
+                                <!--TODO create days input with +/- synced to date -->
+                                <recipe-card :recipe="editingObj.recipe" v-if="editingObj && editingObj.recipe"></recipe-card>
+                                <v-btn prepend-icon="$shopping" color="create" class="mt-1" v-if="!editingObj.shopping && editingObj.recipe && isUpdate()">
+                                    {{$t('Add')}}
+                                    <add-to-shopping-dialog :recipe="editingObj.recipe" :meal-plan="editingObj" @created="loadShoppingListEntries(); editingObj.shopping = true;"></add-to-shopping-dialog>
+                                </v-btn>
+
+                                <v-checkbox :label="$t('AddToShopping')" v-model="editingObj.addshopping" hide-details v-if="editingObj.recipe && !isUpdate()"></v-checkbox>
+                            </v-col>
+                            <v-col cols="12" md="6">
                                 <v-text-field :label="$t('Title')" v-model="editingObj.title"></v-text-field>
                                 <v-date-input
                                     v-model="dateRangeValue"
@@ -51,16 +64,7 @@
                                 <v-number-input control-variant="split" :min="0" v-model="editingObj.servings" :label="$t('Servings')" :precision="2"></v-number-input>
                                 <ModelSelect model="User" :allow-create="false" v-model="editingObj.shared" item-label="displayName" mode="tags"></ModelSelect>
                             </v-col>
-                            <v-col cols="12" md="6">
-                                <ModelSelect model="Recipe" v-model="editingObj.recipe"
-                                             @update:modelValue="editingObj.servings = editingObj.recipe ? editingObj.recipe.servings : 1"></ModelSelect>
-                                <!--                                <v-number-input label="Days" control-variant="split" :min="1"></v-number-input>-->
-                                <!--TODO create days input with +/- synced to date -->
-                                <recipe-card :recipe="editingObj.recipe" v-if="editingObj && editingObj.recipe"></recipe-card>
 
-                                <v-checkbox :label="$t('AddToShopping')" v-model="editingObj.addshopping" hide-details v-if="editingObj.recipe && !isUpdate()"></v-checkbox>
-                                <!-- TODO review shopping before add -->
-                            </v-col>
                         </v-row>
                         <v-row dense>
                             <v-col cols="12">
@@ -96,7 +100,7 @@
 
 <script setup lang="ts">
 
-import {nextTick, onMounted, PropType, ref, toRaw} from "vue";
+import {nextTick, onMounted, PropType, ref, toRaw, watch} from "vue";
 import {ApiApi, MealPlan, MealType, ShoppingListRecipe} from "@/openapi";
 import ModelEditorBase from "@/components/model_editors/ModelEditorBase.vue";
 import {useModelEditorFunctions} from "@/composables/useModelEditorFunctions";
@@ -112,6 +116,7 @@ import {useShoppingStore} from "@/stores/ShoppingStore";
 import ShoppingListEntryInput from "@/components/inputs/ShoppingListEntryInput.vue";
 import ClosableHelpAlert from "@/components/display/ClosableHelpAlert.vue";
 import {useMealPlanStore} from "@/stores/MealPlanStore";
+import AddToShoppingDialog from "@/components/dialogs/AddToShoppingDialog.vue";
 
 const props = defineProps({
     item: {type: {} as PropType<MealPlan>, required: false, default: null},
@@ -134,12 +139,27 @@ const {
     modelClass
 } = useModelEditorFunctions<MealPlan>('MealPlan', emit)
 
+/**
+ * watch prop changes and re-initialize editor
+ * required to embed editor directly into pages and be able to change item from the outside
+ */
+watch([() => props.item, () => props.itemId], () => {
+    initializeEditor()
+})
+
 // object specific data (for selects/display)
 const tab = ref('plan')
 
 const dateRangeValue = ref([] as Date[])
 
 onMounted(() => {
+    initializeEditor()
+})
+
+/**
+ * component specific state setup logic
+ */
+function initializeEditor(){
     const api = new ApiApi()
 
     // load meal types and create new object based on default type when initially loading
@@ -185,7 +205,7 @@ onMounted(() => {
             }
         },)
     })
-})
+}
 
 /**
  * update the editing object with data from the date range selector whenever its changed (could probably be a watcher)

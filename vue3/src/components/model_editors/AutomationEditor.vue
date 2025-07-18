@@ -22,7 +22,7 @@
                 <v-number-input :label="$t('Order')" :step="10" v-model="editingObj.order" :hint="$t('OrderInformation')" control-variant="stacked"></v-number-input>
                 <v-checkbox :label="$t('Disabled')" v-model="editingObj.disabled"></v-checkbox>
 
-                <a href="https://docs.tandoor.dev/features/automation/" target="_blank">{{$t('Learn_More')}}</a>
+                <a href="https://docs.tandoor.dev/features/automation/" target="_blank">{{ $t('Learn_More') }}</a>
             </v-form>
         </v-card-text>
     </model-editor-base>
@@ -31,7 +31,7 @@
 
 <script setup lang="ts">
 
-import {onMounted, PropType} from "vue";
+import {onMounted, PropType, watch} from "vue";
 import {Automation} from "@/openapi";
 import ModelEditorBase from "@/components/model_editors/ModelEditorBase.vue";
 import {useModelEditorFunctions} from "@/composables/useModelEditorFunctions";
@@ -47,7 +47,26 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['create', 'save', 'delete', 'close', 'changedState'])
-const {setupState, deleteObject, saveObject, isUpdate, editingObjName, loading, editingObj, editingObjChanged, modelClass} = useModelEditorFunctions<Automation>('Automation', emit)
+const {
+    setupState,
+    deleteObject,
+    saveObject,
+    isUpdate,
+    editingObjName,
+    loading,
+    editingObj,
+    editingObjChanged,
+    modelClass,
+    applyItemDefaults
+} = useModelEditorFunctions<Automation>('Automation', emit)
+
+/**
+ * watch prop changes and re-initialize editor
+ * required to embed editor directly into pages and be able to change item from the outside
+ */
+watch([() => props.item, () => props.itemId], () => {
+    initializeEditor()
+})
 
 // object specific data (for selects/display)
 
@@ -65,13 +84,22 @@ const AUTOMATION_TYPES = [
 ]
 
 onMounted(() => {
+    initializeEditor()
+})
+
+/**
+ * component specific state setup logic
+ */
+function initializeEditor(){
     setupState(props.item, props.itemId, {
         newItemFunction: () => {
             editingObj.value.order = 0
+
+            applyItemDefaults(props.itemDefaults)
         },
         itemDefaults: props.itemDefaults
     })
-})
+}
 
 </script>
 
