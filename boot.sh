@@ -1,11 +1,19 @@
 #!/bin/sh
 source venv/bin/activate
 
-TANDOOR_PORT="${TANDOOR_PORT:-8080}"
+# these are envsubst in the nginx config, make sure they default to something sensible when unset
+export TANDOOR_PORT="${TANDOOR_PORT:-8080}"
+export MEDIA_ROOT=${MEDIA_ROOT:-/opt/recipes/mediafiles};
+export STATIC_ROOT=${STATIC_ROOT:-/opt/recipes/staticfiles};
+
 GUNICORN_WORKERS="${GUNICORN_WORKERS:-3}"
 GUNICORN_THREADS="${GUNICORN_THREADS:-2}"
 GUNICORN_LOG_LEVEL="${GUNICORN_LOG_LEVEL:-'info'}"
-NGINX_CONF_FILE=/opt/recipes/nginx/conf.d/Recipes.conf
+
+if [ "${TANDOOR_PORT}" -eq 80 ]; then
+    echo "TANDOOR_PORT set to 8080 because 80 is now taken by the integrated nginx"
+    TANDOOR_PORT=8080
+fi
 
 display_warning() {
     echo "[WARNING]"
@@ -13,11 +21,6 @@ display_warning() {
 }
 
 echo "Checking configuration..."
-
-# Nginx config file must exist if gunicorn is not active
-if [ ! -f "$NGINX_CONF_FILE" ] && [ $GUNICORN_MEDIA -eq 0 ]; then
-    display_warning "Nginx configuration file could not be found at the default location!\nPath: ${NGINX_CONF_FILE}"
-fi
 
 # SECRET_KEY (or a valid file at SECRET_KEY_FILE) must be set in .env file
 
@@ -88,10 +91,18 @@ python manage.py collectstatic --noinput
 
 echo "Done"
 
-chmod -R 755 /opt/recipes/mediafiles
+chmod -R 755 ${MEDIA_ROOT:-/opt/recipes/mediafiles}
 
 ipv6_disable=$(cat /sys/module/ipv6/parameters/disable)
 
+# prepare nginx config
+envsubst '$MEDIA_ROOT $STATIC_ROOT $TANDOOR_PORT' < /opt/recipes/http.d/Recipes.conf.template > /opt/recipes/http.d/Recipes.conf
+
+# start nginx
+echo "Starting nginx"
+nginx
+
+echo "Starting gunicorn"
 # Check if IPv6 is enabled, only then run gunicorn with ipv6 support
 if [ "$ipv6_disable" -eq 0 ]; then
     exec gunicorn -b "[::]:$TANDOOR_PORT" --workers $GUNICORN_WORKERS --threads $GUNICORN_THREADS --access-logfile - --error-logfile - --log-level $GUNICORN_LOG_LEVEL recipes.wsgi

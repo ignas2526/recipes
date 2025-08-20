@@ -1,9 +1,12 @@
 !!! info "Community Contributed"
     This guide was contributed by the community and is neither officially supported, nor updated or tested.
 
+!!! danger "Tandoor 2 Compatibility"
+    This guide has not been verified/tested for Tandoor 2, which now integrates a nginx service inside the default docker container and exposes its service on port 80 instead of 8080.
+
 ## K8s Setup
 
-This is a setup which should be sufficient for production use. Be sure to replace the default secrets!
+This is a setup which should be sufficient for production use. Be sure to replace the default secrets! You can find the example files [here](https://github.com/MyDigitalLife/recipes/tree/fix-k8s-documentation/docs/install/k8s) on Github.
 
 ## Files
 

@@ -1,5 +1,5 @@
 <template>
-    <v-card class="mt-2">
+    <v-card class="mt-2" v-if="hasFoodProperties || hasRecipeProperties">
         <v-card-title>
             <v-icon icon="$properties"></v-icon>
             {{ $t('Properties') }}
@@ -22,8 +22,8 @@
                 <tbody>
                 <tr v-for="p in propertyList" :key="p.id">
                     <td>{{ p.name }}</td>
-                    <td>{{ $n(p.propertyAmountPerServing) }} {{ p.unit }}</td>
-                    <td>{{ $n(p.propertyAmountTotal) }} {{ p.unit }}</td>
+                    <td>{{ $n(roundDecimals(p.propertyAmountPerServing)) }} {{ p.unit }}</td>
+                    <td>{{ $n(roundDecimals(p.propertyAmountTotal)) }} {{ p.unit }}</td>
                     <td v-if="sourceSelectedToShow == 'food'">
                         <v-btn @click="dialogProperty = p; dialog = true" variant="plain" color="warning" icon="fa-solid fa-triangle-exclamation" size="small" class="d-print-none"
                                v-if="p.missingValue"></v-btn>
@@ -36,7 +36,7 @@
     </v-card>
 
     <v-dialog max-width="900px" v-model="dialog">
-        <v-card v-if="dialogProperty">
+        <v-card v-if="dialogProperty" :loading="loading">
             <v-closable-card-title :title="`${dialogProperty.propertyAmountTotal} ${dialogProperty.unit} ${dialogProperty.name}`" :sub-title="$t('total')" icon="$properties"
                                    v-model="dialog"></v-closable-card-title>
             <v-card-text>
@@ -60,8 +60,11 @@
                                 <model-edit-dialog model="UnitConversion" @create="refreshRecipe()"
                                                    :item-defaults="{baseAmount: 1, baseUnit: fv.missing_conversion.base_unit,  convertedUnit: fv.missing_conversion.converted_unit, food: fv.food}"></model-edit-dialog>
                             </v-chip>
+                            <v-chip color="warning" prepend-icon="$edit" class="cursor-pointer" :to="{name: 'ModelEditPage', params: {model: 'Recipe', id: recipe.id}}" v-else-if="fv.missing_unit">
+                                {{ $t('NoUnit') }}
+                            </v-chip>
                             <v-chip color="error" prepend-icon="$edit" class="cursor-pointer" v-else>
-                                {{ $t('Edit') }}
+                                {{ $t('MissingProperties') }}
                                 <model-edit-dialog model="Food" :item-id="fv.food.id" @update:model-value="refreshRecipe()"></model-edit-dialog>
                             </v-chip>
                         </template>
@@ -83,6 +86,7 @@ import {ApiApi, PropertyType, Recipe} from "@/openapi";
 import VClosableCardTitle from "@/components/dialogs/VClosableCardTitle.vue";
 import ModelEditDialog from "@/components/dialogs/ModelEditDialog.vue";
 import {ErrorMessageType, useMessageStore} from "@/stores/MessageStore";
+import {roundDecimals} from "@/utils/number_utils.ts";
 
 type PropertyWrapper = {
     id: number,
@@ -182,6 +186,8 @@ const sourceSelectedToShow = ref<'recipe' | 'food'>("food")
 const dialog = ref(false)
 const dialogProperty = ref<undefined | PropertyWrapper>(undefined)
 
+const loading = ref(false)
+
 onMounted(() => {
     if (!hasFoodProperties) {
         sourceSelectedToShow.value = "recipe"
@@ -193,6 +199,7 @@ onMounted(() => {
  */
 function refreshRecipe() {
     let api = new ApiApi()
+    loading.value = true
 
     api.apiRecipeRetrieve({id: recipe.value.id!}).then(r => {
         recipe.value = r
@@ -205,6 +212,8 @@ function refreshRecipe() {
                     }
                 })
             }
+
+            loading.value = false
         })
     }).catch(err => {
         useMessageStore().addError(ErrorMessageType.FETCH_ERROR, err)
