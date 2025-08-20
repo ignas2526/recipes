@@ -29,6 +29,21 @@ if [ -z "${SECRET_KEY}" ]; then
     display_warning "The environment variable 'SECRET_KEY' (or 'SECRET_KEY_FILE' that points to an existing file) is not set but REQUIRED for running Tandoor!"
 fi
 
+if [ -f "${AUTH_LDAP_BIND_PASSWORD_FILE}" ]; then
+    export AUTH_LDAP_BIND_PASSWORD=$(cat "$AUTH_LDAP_BIND_PASSWORD_FILE")
+fi
+
+if [ -f "${EMAIL_HOST_PASSWORD_FILE}" ]; then
+    export EMAIL_HOST_PASSWORD=$(cat "$EMAIL_HOST_PASSWORD_FILE")
+fi
+
+if [ -f "${SOCIALACCOUNT_PROVIDERS_FILE}" ]; then
+    export SOCIALACCOUNT_PROVIDERS=$(cat "$SOCIALACCOUNT_PROVIDERS_FILE")
+fi
+
+if [ -f "${S3_SECRET_ACCESS_KEY_FILE}" ]; then
+    export S3_SECRET_ACCESS_KEY=$(cat "$S3_SECRET_ACCESS_KEY_FILE")
+fi
 
 echo "Waiting for database to be ready..."
 
@@ -69,7 +84,6 @@ python manage.py migrate
 
 echo "Collecting static files, this may take a while..."
 
-python manage.py collectstatic_js_reverse
 python manage.py collectstatic --noinput
 
 echo "Done"
