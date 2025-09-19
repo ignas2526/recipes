@@ -2,7 +2,6 @@
 source venv/bin/activate
 
 # these are envsubst in the nginx config, make sure they default to something sensible when unset
-export TANDOOR_PORT=8080
 export MEDIA_ROOT=${MEDIA_ROOT:-/opt/recipes/mediafiles};
 export STATIC_ROOT=${STATIC_ROOT:-/opt/recipes/staticfiles};
 
@@ -94,9 +93,6 @@ echo "Done"
 
 ipv6_disable=$(cat /sys/module/ipv6/parameters/disable)
 
-# prepare nginx config
-envsubst '$MEDIA_ROOT $STATIC_ROOT $TANDOOR_PORT' < /opt/recipes/http.d/Recipes.conf.template > /opt/recipes/http.d/Recipes.conf
-
 # start nginx
 echo "Starting nginx"
 nginx -g "pid /tmp/nginx.pid;"
@@ -104,7 +100,7 @@ nginx -g "pid /tmp/nginx.pid;"
 echo "Starting gunicorn"
 # Check if IPv6 is enabled, only then run gunicorn with ipv6 support
 if [ "$ipv6_disable" -eq 0 ]; then
-    exec gunicorn -b "[::]:$TANDOOR_PORT" --workers $GUNICORN_WORKERS --threads $GUNICORN_THREADS --access-logfile - --error-logfile - --log-level $GUNICORN_LOG_LEVEL recipes.wsgi
+    exec gunicorn -b "[::]:8080" --workers $GUNICORN_WORKERS --threads $GUNICORN_THREADS --access-logfile - --error-logfile - --log-level $GUNICORN_LOG_LEVEL recipes.wsgi
 else
-    exec gunicorn -b ":$TANDOOR_PORT" --workers $GUNICORN_WORKERS --threads $GUNICORN_THREADS --access-logfile - --error-logfile - --log-level $GUNICORN_LOG_LEVEL recipes.wsgi
+    exec gunicorn -b ":8080" --workers $GUNICORN_WORKERS --threads $GUNICORN_THREADS --access-logfile - --error-logfile - --log-level $GUNICORN_LOG_LEVEL recipes.wsgi
 fi
