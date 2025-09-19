@@ -1,3 +1,9 @@
+client_body_temp_path         /tmp/nginx_client_body_temp 1 2;
+proxy_temp_path               /tmp/nginx_proxy_temp;
+fastcgi_temp_path             /tmp/nginx_fastcgi_temp;
+uwsgi_temp_path               /tmp/nginx_uwsgi_temp;
+scgi_temp_path                /tmp/nginx_scgi_temp;
+
 server {
   listen 80;
   listen [::]:80 ipv6only=on;

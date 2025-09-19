@@ -2,7 +2,7 @@
 source venv/bin/activate
 
 # these are envsubst in the nginx config, make sure they default to something sensible when unset
-export TANDOOR_PORT="${TANDOOR_PORT:-8080}"
+export TANDOOR_PORT=8080
 export MEDIA_ROOT=${MEDIA_ROOT:-/opt/recipes/mediafiles};
 export STATIC_ROOT=${STATIC_ROOT:-/opt/recipes/staticfiles};
 
@@ -11,11 +11,6 @@ GUNICORN_THREADS="${GUNICORN_THREADS:-2}"
 GUNICORN_LOG_LEVEL="${GUNICORN_LOG_LEVEL:-'info'}"
 
 PLUGINS_BUILD="${PLUGINS_BUILD:-0}"
-
-if [ "${TANDOOR_PORT}" -eq 80 ]; then
-    echo "TANDOOR_PORT set to 8080 because 80 is now taken by the integrated nginx"
-    TANDOOR_PORT=8080
-fi
 
 display_warning() {
     echo "[WARNING]"
@@ -97,8 +92,6 @@ python manage.py collectstatic --noinput
 
 echo "Done"
 
-chmod -R 755 ${MEDIA_ROOT:-/opt/recipes/mediafiles}
-
 ipv6_disable=$(cat /sys/module/ipv6/parameters/disable)
 
 # prepare nginx config
@@ -106,7 +99,7 @@ envsubst '$MEDIA_ROOT $STATIC_ROOT $TANDOOR_PORT' < /opt/recipes/http.d/Recipes.
 
 # start nginx
 echo "Starting nginx"
-nginx
+nginx -g "pid /tmp/nginx.pid;"
 
 echo "Starting gunicorn"
 # Check if IPv6 is enabled, only then run gunicorn with ipv6 support
