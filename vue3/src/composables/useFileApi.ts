@@ -1,7 +1,8 @@
 import {useDjangoUrls} from "@/composables/useDjangoUrls";
 import {ref} from "vue";
 import {getCookie} from "@/utils/cookie";
-import {RecipeFromSourceResponseFromJSON, RecipeImageFromJSON, ResponseError, UserFile, UserFileFromJSON} from "@/openapi";
+import {AiProvider, RecipeFromSourceResponseFromJSON, RecipeImageFromJSON, ResponseError, UserFile, UserFileFromJSON} from "@/openapi";
+import {tr} from "vuetify/locale";
 
 
 /**
@@ -86,7 +87,7 @@ export function useFileApi() {
      * @param text text to import
      * @param recipeId id of a recipe to use as import base (for external recipes
      */
-    function doAiImport(file: File | null, text: string = '', recipeId: string = '') {
+    function doAiImport(providerId: number, file: File | null, text: string = '', recipeId: string = '') {
         let formData = new FormData()
 
         if (file != null) {
@@ -96,6 +97,7 @@ export function useFileApi() {
         }
         formData.append('text', text)
         formData.append('recipe_id', recipeId)
+        formData.append('ai_provider_id', providerId)
         fileApiLoading.value = true
 
         return fetch(getDjangoUrl(`api/ai-import/`), {
@@ -116,12 +118,18 @@ export function useFileApi() {
      * @param files array to import
      * @param app app to import
      * @param includeDuplicates if recipes that were found as duplicates should be imported as well
+     * @param mealPlans if meal plans should be imported
+     * @param shoppingLists if shopping lists should be imported
+     * @param nutritionPerServing if nutrition information should be treated as per serving (if false its treated as per recipe)
      * @returns Promise resolving to the import ID of the app import
      */
-    function doAppImport(files: File[], app: string, includeDuplicates: boolean) {
+    function doAppImport(files: File[], app: string, includeDuplicates: boolean, mealPlans: boolean = true, shoppingLists: boolean = true, nutritionPerServing: boolean = false,) {
         let formData = new FormData()
         formData.append('type', app);
         formData.append('duplicates', includeDuplicates ? 'true' : 'false')
+        formData.append('meal_plans', mealPlans ? 'true' : 'false')
+        formData.append('shopping_lists', shoppingLists ? 'true' : 'false')
+        formData.append('nutrition_per_serving', nutritionPerServing ? 'true' : 'false')
         files.forEach(file => {
             formData.append('files', file)
         })

@@ -28,6 +28,7 @@
                         <recipe-context-menu :recipe="recipe" v-if="useUserPreferenceStore().isAuthenticated"></recipe-context-menu>
                     </v-sheet>
                     <keywords-component variant="flat" class="ms-1" :keywords="recipe.keywords"></keywords-component>
+                    <private-recipe-badge :users="recipe.shared" v-if="recipe._private"></private-recipe-badge>
                     <v-rating v-model="recipe.rating" size="x-small" v-if="recipe.rating" half-increments readonly></v-rating>
                     <v-sheet class="ps-2 text-disabled">
                         {{ recipe.description }}
@@ -35,8 +36,7 @@
                 </v-card>
             </v-card>
 
-            <!-- only display values if not all are default (e.g. for external recipes) -->
-            <v-card class="mt-1" v-if="recipe.workingTime != 0 || recipe.waitingTime != 0 || recipe.servings != 1">
+            <v-card class="mt-1">
                 <v-container>
                     <v-row class="text-center text-body-2">
                         <v-col class="pt-1 pb-1">
@@ -85,6 +85,8 @@
                                 <i>{{ recipe.description }}</i>
                             </p>
 
+                            <private-recipe-badge :users="recipe.shared" v-if="recipe._private"></private-recipe-badge>
+
                             <v-rating v-model="recipe.rating" size="x-small" v-if="recipe.rating" readonly></v-rating>
 
                             <keywords-component variant="flat" class="mt-4" :keywords="recipe.keywords"></keywords-component>
@@ -119,11 +121,16 @@
         <template v-if="recipe.filePath">
             <external-recipe-viewer class="mt-2" :recipe="recipe"></external-recipe-viewer>
 
-            <v-card :title="$t('AI')" prepend-icon="$ai" @click="aiConvertRecipe()" :loading="fileApiLoading || loading" :disabled="fileApiLoading || loading"
+            <v-card :title="$t('AI')" prepend-icon="$ai"  :loading="fileApiLoading || loading" :disabled="fileApiLoading || loading || !useUserPreferenceStore().activeSpace.aiEnabled"
                     v-if="!recipe.internal">
                 <v-card-text>
-                    Convert the recipe using AI
+                    {{$t('ConvertUsingAI')}}
 
+                    <model-select model="AiProvider" v-model="selectedAiProvider">
+                        <template #append>
+                            <v-btn @click="aiConvertRecipe()" icon="fa-solid fa-person-running" color="success"></v-btn>
+                        </template>
+                    </model-select>
                 </v-card-text>
             </v-card>
         </template>
@@ -146,7 +153,8 @@
                             variant="outlined"
                             :title="$t('CreatedBy')"
                             :subtitle="recipe.createdBy.displayName"
-                            prepend-icon="fa-solid fa-user">
+                            prepend-icon="fa-solid fa-user"
+                            :to="(useUserPreferenceStore().isAuthenticated) ?  {name: 'SearchPage', query: {createdby: recipe.createdBy.id!}}: undefined">
                         </v-card>
                     </v-col>
                     <v-col cols="12" md="3">
@@ -154,7 +162,8 @@
                             variant="outlined"
                             :title="$t('Created')"
                             :subtitle="DateTime.fromJSDate(recipe.createdAt).toLocaleString(DateTime.DATETIME_MED)"
-                            prepend-icon="$create">
+                            prepend-icon="$create"
+                            :to="(useUserPreferenceStore().isAuthenticated) ? {name: 'SearchPage', query: {createdon: DateTime.fromJSDate(recipe.createdAt).toISODate()}} : undefined">
                         </v-card>
                     </v-col>
                     <v-col cols="12" md="3">
@@ -162,7 +171,8 @@
                             variant="outlined"
                             :title="$t('Updated')"
                             :subtitle="DateTime.fromJSDate(recipe.updatedAt).toLocaleString(DateTime.DATETIME_MED)"
-                            prepend-icon="$edit">
+                            prepend-icon="$edit"
+                            :to="(useUserPreferenceStore().isAuthenticated) ?  {name: 'SearchPage', query: {updatedon: DateTime.fromJSDate(recipe.updatedAt).toISODate()}}: undefined">
                         </v-card>
                     </v-col>
                     <v-col cols="12" md="3" v-if="recipe.sourceUrl">
@@ -186,7 +196,7 @@
 <script setup lang="ts">
 
 import {computed, onBeforeUnmount, onMounted, ref, watch} from 'vue'
-import {ApiApi, Recipe} from "@/openapi"
+import {AiProvider, ApiApi, Recipe} from "@/openapi"
 import NumberScalerDialog from "@/components/inputs/NumberScalerDialog.vue"
 import StepsOverview from "@/components/display/StepsOverview.vue";
 import RecipeActivity from "@/components/display/RecipeActivity.vue";
@@ -201,6 +211,8 @@ import PropertyView from "@/components/display/PropertyView.vue";
 import {useUserPreferenceStore} from "@/stores/UserPreferenceStore.ts";
 import {ErrorMessageType, useMessageStore} from "@/stores/MessageStore.ts";
 import {useFileApi} from "@/composables/useFileApi.ts";
+import PrivateRecipeBadge from "@/components/display/PrivateRecipeBadge.vue";
+import ModelSelect from "@/components/inputs/ModelSelect.vue";
 
 const {request, release} = useWakeLock()
 const {doAiImport, fileApiLoading} = useFileApi()
@@ -210,6 +222,8 @@ const recipe = defineModel<Recipe>({required: true})
 
 const servings = ref(1)
 const showFullRecipeName = ref(false)
+
+const selectedAiProvider = ref<undefined | AiProvider>(useUserPreferenceStore().activeSpace.aiDefaultProvider)
 
 /**
  * factor for multiplying ingredient amounts based on recipe base servings and user selected servings
@@ -243,7 +257,7 @@ onBeforeUnmount(() => {
 function aiConvertRecipe() {
     let api = new ApiApi()
 
-    doAiImport(null, '', recipe.value.id!).then(r => {
+    doAiImport(selectedAiProvider.value.id!,null, '', recipe.value.id!).then(r => {
         if (r.recipe) {
             recipe.value.internal = true
             recipe.value.steps = r.recipe.steps
@@ -252,7 +266,7 @@ function aiConvertRecipe() {
             recipe.value.servingsText = r.recipe.servingsText
             recipe.value.workingTime = r.recipe.workingTime
             recipe.value.waitingTime = r.recipe.waitingTime
-            
+
             servings.value = r.recipe.servings
             loading.value = true
 

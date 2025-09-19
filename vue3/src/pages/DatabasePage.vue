@@ -37,6 +37,33 @@
 
         <v-row>
             <v-col>
+                <h2>{{ $t('Space') }}</h2>
+            </v-col>
+        </v-row>
+        <v-row dense>
+            <database-model-col model="Space"></database-model-col>
+            <database-model-col model="UserSpace"></database-model-col>
+            <database-model-col model="InviteLink"></database-model-col>
+        </v-row>
+
+        <template v-if="useUserPreferenceStore().activeSpace.aiEnabled">
+            <v-row>
+                <v-col>
+                    <h2>{{ $t('Ai') }}</h2>
+                </v-col>
+            </v-row>
+            <v-row dense>
+                <database-model-col model="AiProvider"></database-model-col>
+                <database-model-col model="AiLog"></database-model-col>
+            </v-row>
+        </template>
+
+        <template v-for="p in TANDOOR_PLUGINS" :key="p.name">
+            <component :is="p.databasePageComponent" v-if="p.databasePageComponent"></component>
+        </template>
+
+        <v-row>
+            <v-col>
                 <h2>{{ $t('Miscellaneous') }}</h2>
             </v-col>
         </v-row>
@@ -47,8 +74,8 @@
             <database-model-col model="CustomFilter"></database-model-col>
             <database-model-col model="CookLog"></database-model-col>
             <database-model-col model="ViewLog"></database-model-col>
-            
-             <database-link-col :to="{name: 'IngredientEditorPage'}"
+
+            <database-link-col :to="{name: 'IngredientEditorPage'}"
                                prepend-icon="fa-solid fa-table-list"
                                :title="$t('Ingredient Editor')"
                                :subtitle="$t('IngredientEditorHelp')">
@@ -77,6 +104,8 @@
 
 import DatabaseModelCol from "@/components/display/DatabaseModelCol.vue";
 import DatabaseLinkCol from "@/components/display/DatabaseLinkCol.vue";
+import {TANDOOR_PLUGINS} from "@/types/Plugins.ts";
+import {useUserPreferenceStore} from "@/stores/UserPreferenceStore.ts";
 </script>
 
 

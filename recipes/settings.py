@@ -59,6 +59,8 @@ SPACE_DEFAULT_MAX_RECIPES = int(os.getenv('SPACE_DEFAULT_MAX_RECIPES', 0))
 SPACE_DEFAULT_MAX_USERS = int(os.getenv('SPACE_DEFAULT_MAX_USERS', 0))
 SPACE_DEFAULT_MAX_FILES = int(os.getenv('SPACE_DEFAULT_MAX_FILES', 0))
 SPACE_DEFAULT_ALLOW_SHARING = extract_bool('SPACE_DEFAULT_ALLOW_SHARING', True)
+SPACE_AI_ENABLED = extract_bool('SPACE_AI_ENABLED', True)
+SPACE_AI_CREDITS_MONTHLY = int(os.getenv('SPACE_AI_CREDITS_MONTHLY', 10000))
 
 INTERNAL_IPS = extract_comma_list('INTERNAL_IPS', '127.0.0.1')
 
@@ -137,8 +139,6 @@ HCAPTCHA_SECRET = os.getenv('HCAPTCHA_SECRET', '')
 
 FDC_API_KEY = os.getenv('FDC_API_KEY', 'DEMO_KEY')
 
-AI_API_KEY = os.getenv('AI_API_KEY', '')
-AI_MODEL_NAME = os.getenv('AI_MODEL_NAME', 'gemini/gemini-2.0-flash')
 AI_RATELIMIT = os.getenv('AI_RATELIMIT', '60/hour')
 
 SHARING_ABUSE = extract_bool('SHARING_ABUSE', False)
@@ -221,10 +221,7 @@ try:
                             'module': f'recipes.plugins.{d}',
                             'base_path': os.path.join(BASE_DIR, 'recipes', 'plugins', d),
                             'base_url': plugin_class.base_url,
-                            'bundle_name': plugin_class.bundle_name if hasattr(plugin_class, 'bundle_name') else '',
                             'api_router_name': plugin_class.api_router_name if hasattr(plugin_class, 'api_router_name') else '',
-                            'nav_main': plugin_class.nav_main if hasattr(plugin_class, 'nav_main') else '',
-                            'nav_dropdown': plugin_class.nav_dropdown if hasattr(plugin_class, 'nav_dropdown') else '',
                         }
                         PLUGINS.append(plugin_config)
                         print(f'PLUGIN {d} loaded')
@@ -534,28 +531,6 @@ if REDIS_HOST:
 # Vue webpack settings
 VUE_DIR = os.path.join(BASE_DIR, 'vue')
 
-WEBPACK_LOADER = {
-    'DEFAULT': {
-        'CACHE': not DEBUG,
-        'BUNDLE_DIR_NAME': 'vue/',  # must end with slash
-        'STATS_FILE': os.path.join(VUE_DIR, 'webpack-stats.json'),
-        'POLL_INTERVAL': 0.1,
-        'TIMEOUT': None,
-        'IGNORE': [r'.+\.hot-update.js', r'.+\.map'],
-    },
-}
-
-for p in PLUGINS:
-    if p['bundle_name'] != '':
-        WEBPACK_LOADER[p['bundle_name']] = {
-            'CACHE': not DEBUG,
-            'BUNDLE_DIR_NAME': 'vue/',  # must end with slash
-            'STATS_FILE': os.path.join(p["base_path"], 'vue', 'webpack-stats.json'),
-            'POLL_INTERVAL': 0.1,
-            'TIMEOUT': None,
-            'IGNORE': [r'.+\.hot-update.js', r'.+\.map'],
-        }
-
 DJANGO_VITE = {
     "default": {
         "dev_mode": False,
@@ -590,8 +565,6 @@ else:
 
 USE_I18N = True
 
-USE_L10N = True
-
 USE_TZ = True
 
 LANGUAGES = [
@@ -619,8 +592,18 @@ LANGUAGES = [
 
 AWS_ENABLED = True if os.getenv('S3_ACCESS_KEY', False) else False
 
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    # Serve static files with gzip
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+
 if os.getenv('S3_ACCESS_KEY', ''):
-    DEFAULT_FILE_STORAGE = 'cookbook.helper.CustomStorageClass.CachedS3Boto3Storage'
+    STORAGES['default']['BACKEND'] = 'cookbook.helper.CustomStorageClass.CachedS3Boto3Storage'
 
     AWS_ACCESS_KEY_ID = os.getenv('S3_ACCESS_KEY', '')
     AWS_SECRET_ACCESS_KEY = os.getenv('S3_SECRET_ACCESS_KEY', '')
@@ -635,14 +618,9 @@ if os.getenv('S3_ACCESS_KEY', ''):
     if os.getenv('S3_CUSTOM_DOMAIN', ''):
         AWS_S3_CUSTOM_DOMAIN = os.getenv('S3_CUSTOM_DOMAIN', '')
 
-    MEDIA_URL = os.getenv('MEDIA_URL', '/media/')
-    MEDIA_ROOT = os.getenv('MEDIA_ROOT', os.path.join(BASE_DIR, "mediafiles"))
-else:
-    MEDIA_URL = os.getenv('MEDIA_URL', '/media/')
-    MEDIA_ROOT = os.getenv('MEDIA_ROOT', os.path.join(BASE_DIR, "mediafiles"))
 
-# Serve static files with gzip
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+MEDIA_URL = os.getenv('MEDIA_URL', '/media/')
+MEDIA_ROOT = os.getenv('MEDIA_ROOT', os.path.join(BASE_DIR, "mediafiles"))
 
 # settings for cross site origin (CORS)
 # all origins allowed to support bookmarklet

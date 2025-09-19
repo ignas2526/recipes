@@ -12,11 +12,22 @@
         <v-card-text>
             <v-form :disabled="loading">
 
+                <v-textarea :label="$t('Comment')" rows="2" v-model="editingObj.comment"></v-textarea>
+                <v-row dense>
+                    <v-col cols="12" md="4">
+                        <v-label>{{ $t('Rating') }}</v-label>
+                        <br/>
+                        <v-rating v-model="editingObj.rating" clearable hover density="compact"></v-rating>
+                    </v-col>
+                    <v-col cols="12" md="4">
 
-                <v-text-field :label="$t('Name')" v-model="editingObj.name"></v-text-field>
-                <v-text-field :label="$t('Code')" v-model="editingObj.code"></v-text-field>
+                        <v-number-input :label="$t('Servings')" v-model="editingObj.servings" :precision="2"></v-number-input>
+                    </v-col>
+                    <v-col cols="12" md="4">
+                        <v-date-input :label="$t('Date')" v-model="editingObj.createdAt"></v-date-input>
 
-                <v-textarea :label="$t('Comment')" v-model="editingObj.comment"></v-textarea>
+                    </v-col>
+                </v-row>
 
             </v-form>
         </v-card-text>
@@ -27,19 +38,20 @@
 <script setup lang="ts">
 
 import {onMounted, PropType, watch} from "vue";
-import {OpenDataFood, OpenDataVersion} from "@/openapi";
+import {CookLog} from "@/openapi";
 import ModelEditorBase from "@/components/model_editors/ModelEditorBase.vue";
 import {useModelEditorFunctions} from "@/composables/useModelEditorFunctions";
 
+
 const props = defineProps({
-    item: {type: {} as PropType<OpenDataVersion>, required: false, default: null},
+    item: {type: {} as PropType<CookLog>, required: false, default: null},
     itemId: {type: [Number, String], required: false, default: undefined},
-    itemDefaults: {type: {} as PropType<OpenDataVersion>, required: false, default: {} as OpenDataVersion},
+    itemDefaults: {type: {} as PropType<CookLog>, required: false, default: {} as CookLog},
     dialog: {type: Boolean, default: false}
 })
 
 const emit = defineEmits(['create', 'save', 'delete', 'close', 'changedState'])
-const {setupState, deleteObject, saveObject, isUpdate, editingObjName, loading, editingObj, editingObjChanged, modelClass} = useModelEditorFunctions<OpenDataVersion>('OpenDataVersion', emit)
+const {setupState, deleteObject, saveObject, isUpdate, editingObjName, loading, editingObj, editingObjChanged, modelClass} = useModelEditorFunctions<CookLog>('CookLog', emit)
 
 /**
  * watch prop changes and re-initialize editor
@@ -58,7 +70,7 @@ onMounted(() => {
 /**
  * component specific state setup logic
  */
-function initializeEditor(){
+function initializeEditor() {
     setupState(props.item, props.itemId, {itemDefaults: props.itemDefaults})
 }
 

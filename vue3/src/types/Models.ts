@@ -1,13 +1,13 @@
 import {
-    AccessToken,
-    ApiApi, Automation, type AutomationTypeEnum, ConnectorConfig, CookLog, CustomFilter,
-    Food,
+    AccessToken, AiLog, AiProvider,
+    ApiApi, ApiKeywordMoveUpdateRequest, Automation, type AutomationTypeEnum, ConnectorConfig, CookLog, CustomFilter,
+    Food, FoodInheritField,
     Ingredient,
     InviteLink, Keyword,
     MealPlan,
     MealType,
     Property, PropertyType,
-    Recipe, RecipeBook, RecipeBookEntry, RecipeImport, SearchFields, ShoppingListEntry,
+    Recipe, RecipeBook, RecipeBookEntry, RecipeImport, SearchFields, ShoppingListEntry, Space,
     Step,
     Supermarket,
     SupermarketCategory, Sync, SyncLog,
@@ -85,7 +85,7 @@ type ModelTableHeaders = {
  * custom type containing all attributes needed by the generic model system to properly handle all functions
  */
 export type Model = {
-    name: string,
+    name: EditorSupportedModels,
     localizationKey: string,
     localizationKeyDescription: string,
     icon: string,
@@ -101,6 +101,7 @@ export type Model = {
     disableCreate?: boolean | undefined,
     disableUpdate?: boolean | undefined,
     disableDelete?: boolean | undefined,
+    disableSearch?: boolean | undefined,
     // disable showing this model as an option in the ModelListPage
     disableListView?: boolean | undefined,
 
@@ -146,6 +147,10 @@ export type EditorSupportedModels =
     | 'ViewLog'
     | 'ConnectorConfig'
     | 'SearchFields'
+    | 'AiProvider'
+    | 'AiLog'
+    | 'Space'
+    | 'FoodInheritField'
 
 // used to type methods/parameters in conjunction with configuration type
 export type EditorSupportedTypes =
@@ -180,6 +185,10 @@ export type EditorSupportedTypes =
     | ViewLog
     | ConnectorConfig
     | SearchFields
+    | AiProvider
+    | AiLog
+    | Space
+    | FoodInheritField
 
 export const TFood = {
     name: 'Food',
@@ -191,6 +200,7 @@ export const TFood = {
 
     isPaginated: true,
     isMerge: true,
+    isTree: true,
     mergeAutomation: 'FOOD_ALIAS',
     toStringKeys: ['name'],
 
@@ -234,6 +244,7 @@ export const TKeyword = {
 
     isPaginated: true,
     isMerge: true,
+    isTree: true,
     mergeAutomation: 'KEYWORD_ALIAS',
     toStringKeys: ['name'],
 
@@ -579,10 +590,11 @@ export const TCookLog = {
     localizationKeyDescription: 'CookLogHelp',
     icon: 'fa-solid fa-table-list',
 
-    isPaginated: true,
+    editorComponent: defineAsyncComponent(() => import(`@/components/model_editors/CookLogEditor.vue`)),
+
     disableCreate: true,
-    disableUpdate: true,
-    disableDelete: true,
+
+    isPaginated: true,
     toStringKeys: ['recipe'],
 
     tableHeaders: [
@@ -648,7 +660,8 @@ export const TUserSpace = {
     disableCreate: true,
 
     tableHeaders: [
-        {title: 'User', key: 'user'},
+        {title: 'User', key: 'user.displayName'},
+        {title: 'Group', key: 'groups'},
         {title: 'Actions', key: 'action', align: 'end'},
     ]
 } as Model
@@ -662,18 +675,39 @@ export const TInviteLink = {
 
     editorComponent: defineAsyncComponent(() => import(`@/components/model_editors/InviteLinkEditor.vue`)),
 
-    disableListView: true,
+    disableSearch: true,
     isPaginated: true,
     toStringKeys: ['email', 'role'],
 
     tableHeaders: [
         {title: 'Email', key: 'email'},
-        {title: 'Role', key: 'group'},
+        {title: 'Role', key: 'group.name'},
         {title: 'Valid Until', key: 'validUntil'},
         {title: 'Actions', key: 'action', align: 'end'},
     ]
 } as Model
 registerModel(TInviteLink)
+
+export const TSpace = {
+    name: 'Space',
+    localizationKey: 'Space',
+    localizationKeyDescription: 'SpaceHelp',
+    icon: 'fa-solid fa-hard-drive',
+
+    editorComponent: defineAsyncComponent(() => import(`@/components/model_editors/SpaceEditor.vue`)),
+
+    disableDelete: true,
+    isPaginated: true,
+    toStringKeys: ['name'],
+
+    tableHeaders: [
+        {title: 'Name', key: 'name'},
+        {title: 'Owner', key: 'createdBy.displayName'},
+        {title: 'Active', key: 'active'},
+        {title: 'Actions', key: 'action', align: 'end'},
+    ]
+} as Model
+registerModel(TSpace)
 
 export const TStorage = {
     name: 'Storage',
@@ -784,6 +818,55 @@ export const TConnectorConfig = {
     ]
 } as Model
 registerModel(TConnectorConfig)
+
+export const TAiProvider = {
+    name: 'AiProvider',
+    localizationKey: 'AiProvider',
+    localizationKeyDescription: 'AiProviderHelp',
+    icon: 'fa-solid fa-wand-magic-sparkles',
+
+    editorComponent: defineAsyncComponent(() => import(`@/components/model_editors/AiProviderEditor.vue`)),
+
+    disableListView: false,
+    toStringKeys: ['name'],
+    isPaginated: true,
+
+    disableCreate: false,
+    disableDelete: false,
+    disableUpdate: false,
+
+    tableHeaders: [
+        {title: 'Name', key: 'name'},
+        {title: 'Global', key: 'space'},
+        {title: 'Actions', key: 'action', align: 'end'},
+    ]
+} as Model
+registerModel(TAiProvider)
+
+export const TAiLog = {
+    name: 'AiLog',
+    localizationKey: 'AiLog',
+    localizationKeyDescription: 'AiLogHelp',
+    icon: 'fa-solid fa-wand-magic-sparkles',
+
+    disableListView: false,
+    toStringKeys: ['aiProvider.name', 'function', 'created_at'],
+    isPaginated: true,
+
+    disableCreate: true,
+    disableDelete: true,
+    disableUpdate: true,
+
+    tableHeaders: [
+        {title: 'Type', key: '_function'},
+        {title: 'AiProvider', key: 'aiProvider.name',},
+        {title: 'Credits', key: 'creditCost',},
+        {title: 'FromBalance', key: 'creditsFromBalance',},
+        {title: 'CreatedAt', key: 'createdAt'},
+        {title: 'Actions', key: 'action', align: 'end'},
+    ]
+} as Model
+registerModel(TAiLog)
 
 export const TFoodInheritField = {
     name: 'FoodInheritField',
@@ -946,6 +1029,22 @@ export class GenericModel {
             mergeRequestParams[this.model.name.charAt(0).toLowerCase() + this.model.name.slice(1)] = {}
 
             return this.api[`api${this.model.name}MergeUpdate`](mergeRequestParams)
+        }
+    }
+
+    /**
+     * move the given source object so that its parent is the given parentId.
+     * @param source object to change parent for
+     * @param parentId parent id to change the object to or 0 to remove parent
+     */
+    move(source: EditorSupportedTypes, parentId: number) {
+        if (!this.model.isTree) {
+            throw new Error('This model does not support trees!')
+        } else {
+            let moveRequestParams: any = {id: source.id, parent: parentId}
+            moveRequestParams[this.model.name.charAt(0).toLowerCase() + this.model.name.slice(1)] = source
+
+            return this.api[`api${this.model.name}MoveUpdate`](moveRequestParams)
         }
     }
 
