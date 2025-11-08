@@ -96,4 +96,4 @@ python manage.py collectstatic --noinput --clear
 echo "Done"
 
 echo "Starting gunicorn"
-exec gunicorn --bind unix:/run/tandoor.sock --workers $GUNICORN_WORKERS --threads $GUNICORN_THREADS --timeout ${GUNICORN_TIMEOUT:-30} --access-logfile - --error-logfile - --log-level $GUNICORN_LOG_LEVEL recipes.wsgi
+exec gunicorn --bind unix:/tmp/tandoor.sock --workers $GUNICORN_WORKERS --threads $GUNICORN_THREADS --timeout ${GUNICORN_TIMEOUT:-30} --access-logfile - --error-logfile - --log-level $GUNICORN_LOG_LEVEL recipes.wsgi
