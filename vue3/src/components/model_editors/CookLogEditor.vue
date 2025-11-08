@@ -8,7 +8,8 @@
         :is-update="isUpdate()"
         :is-changed="editingObjChanged"
         :model-class="modelClass"
-        :object-name="editingObjName()">
+        :object-name="editingObjName()"
+        :editing-object="editingObj">
         <v-card-text>
             <v-form :disabled="loading">
 
@@ -20,7 +21,6 @@
                         <v-rating v-model="editingObj.rating" clearable hover density="compact"></v-rating>
                     </v-col>
                     <v-col cols="12" md="4">
-
                         <v-number-input :label="$t('Servings')" v-model="editingObj.servings" :precision="2"></v-number-input>
                     </v-col>
                     <v-col cols="12" md="4">
@@ -41,7 +41,7 @@ import {onMounted, PropType, watch} from "vue";
 import {CookLog} from "@/openapi";
 import ModelEditorBase from "@/components/model_editors/ModelEditorBase.vue";
 import {useModelEditorFunctions} from "@/composables/useModelEditorFunctions";
-
+import {VDateInput} from 'vuetify/labs/VDateInput' //TODO remove once component is out of labs
 
 const props = defineProps({
     item: {type: {} as PropType<CookLog>, required: false, default: null},

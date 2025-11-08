@@ -1,6 +1,6 @@
 <template>
     <mavon-editor v-model="step.instruction" :autofocus="false" :external-link="false"
-                  style="z-index: auto" :id="'id_instruction_' + step.id"
+                  style="z-index: auto; box-shadow: none;" class="border-sm" :id="'id_instruction_' + step.id"
                   :language="'en'"
                   :toolbars="md_editor_toolbars" :defaultOpen="'edit'" ref="markdownEditor">
         <template #left-toolbar-after>
@@ -17,10 +17,10 @@
                     <v-list density="compact">
                         <v-list-subheader>{{$t('Ingredients')}}</v-list-subheader>
                         <v-list-item
-                            v-for="template in templates"
-                            @click="insertTextAtPosition(template.template + ' ')"
+                            v-for="t in templates"
+                            @click="insertTextAtPosition(t.template + ' ')"
                         >
-                            <ingredient-string :ingredient="template.ingredient"></ingredient-string>
+                            <ingredient-string :ingredient="t.ingredient"></ingredient-string>
                         </v-list-item>
                     </v-list>
                 </v-menu>
@@ -65,7 +65,7 @@ const templates = computed(() => {
 function insertTextAtPosition(text: string){
     let textarea = markdownEditor.value.getTextareaDom()
     let position = textarea.selectionStart
-    if (step.value.instruction){
+    if (step.value.instruction != undefined){
         step.value.instruction = step.value.instruction.slice(0, position) + text + step.value.instruction.slice(position)
 
         nextTick(() => {

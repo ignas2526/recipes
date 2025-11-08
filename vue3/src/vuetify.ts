@@ -32,13 +32,21 @@ export default createVuetify({
         },
         // always localize the date display of DateInputs
         VDateInput: {
-            displayFormat : (date: Date) => DateTime.fromJSDate(date).toLocaleString()
+            displayFormat: (date: Date) => DateTime.fromJSDate(date).toLocaleString()
         },
         // always use color for switches to properly see if enabled or not
         VSwitch: {
             color: 'primary'
+        },
+        // globally set the correct decimal seperator
+        VNumberInput: {
+            decimalSeparator: 0.1.toLocaleString().replace(/\d/g, '')
         }
     },
+    // locale: {
+    //     locale: 'de',
+    //     fallback: 'en',
+    // },
     theme: {
         defaultTheme: 'light',
         themes: {

@@ -16,6 +16,10 @@ display_warning() {
     echo -e "$1"
 }
 
+# start nginx early to display error pages
+echo "Starting nginx"
+nginx -g "pid /tmp/nginx.pid;"
+
 echo "Checking configuration..."
 
 # SECRET_KEY (or a valid file at SECRET_KEY_FILE) must be set in .env file
@@ -87,20 +91,9 @@ fi
 
 echo "Collecting static files, this may take a while..."
 
-python manage.py collectstatic --noinput
+python manage.py collectstatic --noinput --clear
 
 echo "Done"
 
-ipv6_disable=$(cat /sys/module/ipv6/parameters/disable)
-
-# start nginx
-echo "Starting nginx"
-nginx -g "pid /tmp/nginx.pid;"
-
 echo "Starting gunicorn"
-# Check if IPv6 is enabled, only then run gunicorn with ipv6 support
-if [ "$ipv6_disable" -eq 0 ]; then
-    exec gunicorn -b "[::]:8080" --workers $GUNICORN_WORKERS --threads $GUNICORN_THREADS --access-logfile - --error-logfile - --log-level $GUNICORN_LOG_LEVEL recipes.wsgi
-else
-    exec gunicorn -b ":8080" --workers $GUNICORN_WORKERS --threads $GUNICORN_THREADS --access-logfile - --error-logfile - --log-level $GUNICORN_LOG_LEVEL recipes.wsgi
-fi
+exec gunicorn --bind unix:/run/tandoor.sock --workers $GUNICORN_WORKERS --threads $GUNICORN_THREADS --timeout ${GUNICORN_TIMEOUT:-30} --access-logfile - --error-logfile - --log-level $GUNICORN_LOG_LEVEL recipes.wsgi
