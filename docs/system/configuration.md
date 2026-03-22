@@ -44,14 +44,14 @@ ALLOWED_HOSTS=recipes.mydomain.com
 Multiple parameters are required to configure the database.
 *Note: You can setup parameters for a test database by defining all of the parameters preceded by `TEST_` e.g. TEST_DB_ENGINE=*
 
-| Var               | Options                                                            | Description                                                             |
-|-------------------|--------------------------------------------------------------------|-------------------------------------------------------------------------|
-| DB_ENGINE         | django.db.backends.postgresql (default) django.db.backends.sqlite3 | Type of database connection. Production should always use postgresql.   |
-| POSTGRES_HOST     | any                                                                | Used to connect to database server. Use container name in docker setup. |
-| POSTGRES_DB       | any                                                                | Name of database.                                                       |
-| POSTGRES_PORT     | 1-65535                                                            | Port of database, Postgresql default `5432`                             |
-| POSTGRES_USER     | any                                                                | Username for database connection.                                       |
-| POSTGRES_PASSWORD | any                                                                | Password for database connection.                                       |
+| Var               | Options                                                                          | Description                                                             |
+|-------------------|----------------------------------------------------------------------------------|-------------------------------------------------------------------------|
+| DB_ENGINE         | django.db.backends.postgresql (recommended) django.db.backends.sqlite3 (default) | Type of database connection. Production should always use postgresql.   |
+| POSTGRES_HOST     | any                                                                              | Used to connect to database server. Use container name in docker setup. |
+| POSTGRES_DB       | any                                                                              | Name of database.                                                       |
+| POSTGRES_PORT     | 1-65535                                                                          | Port of database, Postgresql default `5432`                             |
+| POSTGRES_USER     | any                                                                              | Username for database connection.                                       |
+| POSTGRES_PASSWORD | any                                                                              | Password for database connection.                                       |
 
 #### Password file
 
@@ -164,6 +164,16 @@ MEDIA_URL=/media/
 
 Where mediafiles should be stored on disk. The default location is a
 `mediafiles` subfolder at the root of the application directory.
+
+#### Local Storage Paths
+
+> default `<MEDIA_ROOT>/local_provider` - options: `/path/to/local/recipes,/another/path` (comma separated list)
+
+Allowed paths for the local provider. The local provider will only serve files that are within these paths.
+
+```
+LOCAL_STORAGE_PATHS=/path/to/local/recipes
+```
 
 #### Gunicorn Workers
 
@@ -377,6 +387,21 @@ Allows you to set up external OAuth providers.
 SOCIAL_PROVIDERS = allauth.socialaccount.providers.github, allauth.socialaccount.providers.nextcloud,
 ```
 
+> default `0` - options `0`, `1`
+
+If you enable Social Auth, you can also disable the display of the regular login form by setting:
+```
+HIDE_LOGIN_FORM=1
+```
+
+If you chose to enable this, the login page will only display the button to login with the configured social providers.
+
+To force the display of the login form (so you can login with a local admin account), you can add `form=1`
+as a parameter to the login URL - for example:
+```
+http://localhost/accounts/login/?form=1
+```
+
 #### Remote User Auth
 > default `0` - options `0`, `1`
 
@@ -488,7 +513,7 @@ S3_CUSTOM_DOMAIN= # when using a CDN/proxy to S3 (see https://github.com/Tandoor
 
 #### AI Integration
 
-Most AI features are configured trough the AI Provider settings in the Tandoor web interface. Some defaults can be set for new spaces on your instance.
+Most AI features are configured through the AI Provider settings in the Tandoor web interface. Some defaults can be set for new spaces on your instance.
 
 Enables AI features for spaces by default
 ```
