@@ -6,12 +6,13 @@ from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth.models import Group
 from django.core.cache import cache
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
-from django.http import HttpResponseRedirect
+from django.http import Http404, HttpResponseRedirect
 from django.urls import reverse, reverse_lazy
 from django.utils.translation import gettext as _
 from django_scopes import scopes_disabled
 from oauth2_provider.contrib.rest_framework import TokenHasReadWriteScope, TokenHasScope
 from oauth2_provider.models import AccessToken
+from oauth2_provider.settings import oauth2_settings
 from rest_framework import permissions
 from rest_framework.permissions import SAFE_METHODS
 import random
@@ -332,13 +333,18 @@ class CustomRecipePermission(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         share = request.query_params.get('share', None)
         if share:
-            return share_link_valid(obj, share)
+            if share_link_valid(obj, share):
+                return True
+            # Invalid share link - check if user has normal access
+            # If not, raise 404 to avoid leaking recipe existence
+            if obj.space != request.space:
+                raise Http404()
+            # User is in same space, fall through to normal permission check
+        if obj.private:
+            return ((obj.created_by == request.user) or (request.user in obj.shared.all())) and obj.space == request.space
         else:
-            if obj.private:
-                return ((obj.created_by == request.user) or (request.user in obj.shared.all())) and obj.space == request.space
-            else:
-                return ((has_group_permission(request.user, ['guest']) and request.method in SAFE_METHODS)
-                        or has_group_permission(request.user, ['user'])) and obj.space == request.space
+            return ((has_group_permission(request.user, ['guest']) and request.method in SAFE_METHODS)
+                    or has_group_permission(request.user, ['user'])) and obj.space == request.space
 
 
 class CustomAiProviderPermission(permissions.BasePermission):
@@ -398,6 +404,14 @@ class CustomTokenHasReadWriteScope(TokenHasReadWriteScope):
     Only difference: if any other authentication method except OAuth2Authentication is used the scope check is ignored
     IMPORTANT: do not use this class without any other permission class as it will not check anything besides token scopes
     """
+
+    def get_scopes(self, request, view):
+        if request.method.upper() in SAFE_METHODS:
+            read_write_scope = oauth2_settings.READ_SCOPE
+        else:
+            read_write_scope = oauth2_settings.WRITE_SCOPE
+
+        return [read_write_scope]
 
     def has_permission(self, request, view):
         if isinstance(request.auth, AccessToken):
