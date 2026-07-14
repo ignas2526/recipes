@@ -18,7 +18,15 @@ import {
     GroupFromJSON,
     GroupFromJSONTyped,
     GroupToJSON,
+    GroupToJSONTyped,
 } from './Group';
+import type { Household } from './Household';
+import {
+    HouseholdFromJSON,
+    HouseholdFromJSONTyped,
+    HouseholdToJSON,
+    HouseholdToJSONTyped,
+} from './Household';
 
 /**
  * Adds nested create feature
@@ -52,6 +60,12 @@ export interface InviteLink {
     group: Group;
     /**
      * 
+     * @type {Household}
+     * @memberof InviteLink
+     */
+    household?: Household | null;
+    /**
+     * 
      * @type {Date}
      * @memberof InviteLink
      */
@@ -73,7 +87,7 @@ export interface InviteLink {
      * @type {string}
      * @memberof InviteLink
      */
-    internalNote?: string;
+    internalNote?: string | null;
     /**
      * 
      * @type {number}
@@ -121,6 +135,7 @@ export function InviteLinkFromJSONTyped(json: any, ignoreDiscriminator: boolean)
         'uuid': json['uuid'],
         'email': json['email'] == null ? undefined : json['email'],
         'group': GroupFromJSON(json['group']),
+        'household': json['household'] == null ? undefined : HouseholdFromJSON(json['household']),
         'validUntil': json['valid_until'] == null ? undefined : (new Date(json['valid_until'])),
         'usedBy': json['used_by'],
         'reusable': json['reusable'] == null ? undefined : json['reusable'],
@@ -131,16 +146,22 @@ export function InviteLinkFromJSONTyped(json: any, ignoreDiscriminator: boolean)
     };
 }
 
-export function InviteLinkToJSON(value?: Omit<InviteLink, 'uuid'|'usedBy'|'createdBy'|'createdAt'|'emailSent'> | null): any {
+export function InviteLinkToJSON(json: any): InviteLink {
+    return InviteLinkToJSONTyped(json, false);
+}
+
+export function InviteLinkToJSONTyped(value?: Omit<InviteLink, 'uuid'|'used_by'|'created_by'|'created_at'|'email_sent'> | null, ignoreDiscriminator: boolean = false): any {
     if (value == null) {
         return value;
     }
+
     return {
         
         'id': value['id'],
         'email': value['email'],
         'group': GroupToJSON(value['group']),
-        'valid_until': value['validUntil'] == null ? undefined : ((value['validUntil']).toISOString().substring(0,10)),
+        'household': HouseholdToJSON(value['household']),
+        'valid_until': value['validUntil'] == null ? value['validUntil'] : value['validUntil'].toISOString().substring(0,10),
         'reusable': value['reusable'],
         'internal_note': value['internalNote'],
     };
